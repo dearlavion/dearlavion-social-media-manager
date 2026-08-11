@@ -30,10 +30,12 @@ export class GithubService {
   }
 
   private headers(conn: GithubConnection): HeadersInit {
-    return {
-      Authorization: `Bearer ${conn.token}`,
-      Accept: 'application/vnd.github+json',
-    };
+    const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
+    const token = conn.token.trim();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   async loadChannels(conn: GithubConnection): Promise<{ channels: ChannelConfig[]; sha: string }> {

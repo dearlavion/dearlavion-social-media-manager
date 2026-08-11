@@ -29,6 +29,7 @@
     <button type="button" (click)="load()" [disabled]="loading">
       {{ loading ? 'Loading…' : 'Load channels.json' }}
     </button>
+    <p class="hint">Token is only required to Save. Since this repo is public, Load works without one.</p>
   </section>
 
   @if (statusMessage) {
