@@ -36,7 +36,15 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     const saved = sessionStorage.getItem(CONNECTION_STORAGE_KEY);
     if (saved) {
-      this.connection = { ...this.connection, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved) as Partial<GithubConnection>;
+      // Only apply saved fields that actually have a value, so a stale blank
+      // save (e.g. from before defaults existed) can't clobber the defaults.
+      this.connection = {
+        owner: parsed.owner?.trim() || this.connection.owner,
+        repo: parsed.repo?.trim() || this.connection.repo,
+        branch: parsed.branch?.trim() || this.connection.branch,
+        token: parsed.token ?? this.connection.token,
+      };
     }
   }
 
