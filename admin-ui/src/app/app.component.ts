@@ -16,7 +16,12 @@ const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 export class AppComponent implements OnInit {
   readonly platforms = PLATFORMS;
 
-  connection: GithubConnection = { owner: '', repo: '', branch: 'main', token: '' };
+  connection: GithubConnection = {
+    owner: 'dearlavion',
+    repo: 'dearlavion-social-media-manager',
+    branch: 'main',
+    token: '',
+  };
   channels: ChannelConfig[] = [];
   sha: string | null = null;
 
