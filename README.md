@@ -52,15 +52,24 @@ This was scaffolded locally and committed, but not pushed anywhere. Create `dear
 
 ### 7. Enable/configure channels
 
-Run the admin UI locally:
+**Hosted (recommended):** `.github/workflows/deploy-admin-ui.yml` builds `admin-ui/` and deploys it to GitHub Pages on every push to `main` that touches `admin-ui/`. One-time setup: on GitHub, go to **Settings → Pages → Build and deployment → Source**, and select **GitHub Actions** (this can't be done via git/API, it's a repo-settings toggle only you can make). After that, push once (or run the workflow manually) and the UI is live at:
+
+```
+https://dearlavion.github.io/dearlavion-social-media-manager/
+```
+
+Note: GitHub Pages needs a public repo unless you're on a paid GitHub plan — which you need anyway for the Instagram/Pinterest public-image-URL requirement above.
+
+**Local (alternative):** run it on your own machine instead:
 
 ```bash
 cd admin-ui
 npm install
 npm start
 ```
+Open http://localhost:4201.
 
-Open http://localhost:4201, fill in your repo owner/name/branch, paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permission (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`), then load, edit, and save `config/channels.json`.
+Either way: fill in your repo owner/name/branch, paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permission (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`), then load, edit, and save `config/channels.json`.
 
 Each channel needs: a unique `id`, `platform`, `intervalHours`, `driveFolderId`, and a default `captionTemplate`. To override the caption for one specific image, drop a `<image-filename>.caption.txt` file next to it in the Drive folder (or directly in `inbox/<channelId>/`) — it's used instead of the template and moved along with the image once posted.
 
