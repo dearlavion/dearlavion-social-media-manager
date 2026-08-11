@@ -1,0 +1,19 @@
+{
+  "name": "dearlavion-social-media-automation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync-drive": "tsx src/sync-drive.ts",
+    "post": "tsx src/post.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

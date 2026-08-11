@@ -1,0 +1,12 @@
+[
+  {
+    "id": "example-facebook",
+    "platform": "facebook",
+    "enabled": false,
+    "intervalHours": 6,
+    "driveFolderId": "REPLACE_WITH_GOOGLE_DRIVE_FOLDER_ID",
+    "captionTemplate": "New drop ✨",
+    "syncedDriveFileIds": [],
+    "lastPostedAt": null
+  }
+]

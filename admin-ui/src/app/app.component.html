@@ -1,0 +1,85 @@
+<main class="page">
+  <h1>Dear Lavion Social Media Manager</h1>
+  <p class="subtitle">
+    Edits <code>config/channels.json</code> directly on GitHub via the Contents API. Your token is
+    kept only in this browser tab's session storage — it is never sent anywhere except
+    <code>api.github.com</code>.
+  </p>
+
+  <section class="card">
+    <h2>Repository</h2>
+    <div class="connection-grid">
+      <label>
+        Owner
+        <input [(ngModel)]="connection.owner" placeholder="dearlavion" />
+      </label>
+      <label>
+        Repo
+        <input [(ngModel)]="connection.repo" placeholder="dearlavion-social-media-manager" />
+      </label>
+      <label>
+        Branch
+        <input [(ngModel)]="connection.branch" placeholder="main" />
+      </label>
+      <label>
+        GitHub token
+        <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT, contents: read/write" />
+      </label>
+    </div>
+    <button type="button" (click)="load()" [disabled]="loading">
+      {{ loading ? 'Loading…' : 'Load channels.json' }}
+    </button>
+  </section>
+
+  @if (statusMessage) {
+    <p class="status">{{ statusMessage }}</p>
+  }
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+
+  @if (loaded) {
+    <section class="card">
+      <h2>Channels</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Enabled</th>
+            <th>Id</th>
+            <th>Platform</th>
+            <th>Interval (h)</th>
+            <th>Drive folder ID</th>
+            <th>Caption template</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (channel of channels; track $index) {
+            <tr>
+              <td><input type="checkbox" [(ngModel)]="channel.enabled" /></td>
+              <td><input [(ngModel)]="channel.id" placeholder="ig-main" /></td>
+              <td>
+                <select [(ngModel)]="channel.platform">
+                  @for (p of platforms; track p) {
+                    <option [value]="p">{{ p }}</option>
+                  }
+                </select>
+              </td>
+              <td><input type="number" min="1" [(ngModel)]="channel.intervalHours" /></td>
+              <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
+              <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
+              <td><button type="button" class="danger" (click)="removeChannel($index)">Remove</button></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="actions">
+        <button type="button" (click)="addChannel()">Add channel</button>
+        <button type="button" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Saving…' : 'Save to GitHub' }}
+        </button>
+      </div>
+    </section>
+  }
+</main>
