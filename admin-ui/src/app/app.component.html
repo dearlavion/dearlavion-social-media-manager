@@ -49,6 +49,7 @@
             <th>Platform</th>
             <th>Interval (h)</th>
             <th>Drive folder ID</th>
+            <th>Buffer channel ID</th>
             <th>Caption template</th>
             <th></th>
           </tr>
@@ -67,6 +68,7 @@
               </td>
               <td><input type="number" min="1" [(ngModel)]="channel.intervalHours" /></td>
               <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
+              <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
               <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
               <td><button type="button" class="danger" (click)="removeChannel($index)">Remove</button></td>
             </tr>

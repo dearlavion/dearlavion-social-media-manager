@@ -9,7 +9,8 @@ export const CONFIG_PATH = path.join(REPO_ROOT, 'config', 'channels.json');
 export const INBOX_ROOT = path.join(REPO_ROOT, 'inbox');
 export const POSTED_ROOT = path.join(REPO_ROOT, 'posted');
 
-export type Platform = 'instagram' | 'tiktok' | 'pinterest' | 'facebook';
+/** Informational only — the actual publish target is `bufferChannelId`, which already knows its own platform on Buffer's side. */
+export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
 export interface ChannelConfig {
   id: string;
@@ -17,6 +18,7 @@ export interface ChannelConfig {
   enabled: boolean;
   intervalHours: number;
   driveFolderId: string;
+  bufferChannelId: string;
   captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
@@ -27,7 +29,7 @@ function assertValidChannel(value: unknown, index: number): asserts value is Cha
   if (typeof c.id !== 'string' || !c.id) {
     throw new Error(`config/channels.json[${index}]: "id" must be a non-empty string`);
   }
-  if (!['instagram', 'tiktok', 'pinterest', 'facebook'].includes(c.platform as string)) {
+  if (!['instagram', 'tiktok', 'facebook'].includes(c.platform as string)) {
     throw new Error(`config/channels.json[${index}] (${c.id}): invalid "platform" "${c.platform}"`);
   }
   if (typeof c.enabled !== 'boolean') {
@@ -38,6 +40,9 @@ function assertValidChannel(value: unknown, index: number): asserts value is Cha
   }
   if (typeof c.driveFolderId !== 'string' || !c.driveFolderId) {
     throw new Error(`config/channels.json[${index}] (${c.id}): "driveFolderId" must be a non-empty string`);
+  }
+  if (c.enabled && (typeof c.bufferChannelId !== 'string' || !c.bufferChannelId)) {
+    throw new Error(`config/channels.json[${index}] (${c.id}): "bufferChannelId" must be a non-empty string when enabled`);
   }
 }
 
@@ -65,8 +70,8 @@ export const DRY_RUN = process.env['DRY_RUN'] === 'true';
 
 /**
  * Builds the raw.githubusercontent.com URL for a file already committed to
- * this repo. Instagram/Pinterest need a publicly-fetchable image_url rather
- * than accepting a binary upload, so this only works if the repo is public.
+ * this repo. Buffer's createPost only accepts a publicly-fetchable image
+ * URL, not a binary upload, so this only works if the repo is public.
  */
 export function publicRawUrl(absPath: string): string {
   const repo = process.env['GITHUB_REPOSITORY']; // e.g. "dearlavion/dearlavion-social-media-manager", set by GH Actions
@@ -77,12 +82,3 @@ export function publicRawUrl(absPath: string): string {
   const relPath = path.relative(REPO_ROOT, absPath).split(path.sep).join('/');
   return `https://raw.githubusercontent.com/${repo}/${ref}/${relPath}`;
 }
-
-export interface PublishParams {
-  imagePath: string;
-  publicImageUrl: string;
-  caption: string;
-  channel: ChannelConfig;
-}
-
-export type PublishFn = (params: PublishParams) => Promise<void>;

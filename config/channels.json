@@ -5,6 +5,7 @@
     "enabled": false,
     "intervalHours": 6,
     "driveFolderId": "REPLACE_WITH_GOOGLE_DRIVE_FOLDER_ID",
+    "bufferChannelId": "REPLACE_WITH_BUFFER_CHANNEL_ID",
     "captionTemplate": "New drop ✨",
     "syncedDriveFileIds": [],
     "lastPostedAt": null

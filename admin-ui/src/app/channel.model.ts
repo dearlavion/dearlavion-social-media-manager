@@ -1,6 +1,6 @@
-export type Platform = 'instagram' | 'tiktok' | 'pinterest' | 'facebook';
+export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
-export const PLATFORMS: Platform[] = ['instagram', 'tiktok', 'pinterest', 'facebook'];
+export const PLATFORMS: Platform[] = ['instagram', 'tiktok', 'facebook'];
 
 export interface ChannelConfig {
   id: string;
@@ -8,6 +8,7 @@ export interface ChannelConfig {
   enabled: boolean;
   intervalHours: number;
   driveFolderId: string;
+  bufferChannelId: string;
   captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
@@ -20,6 +21,7 @@ export function newChannel(): ChannelConfig {
     enabled: false,
     intervalHours: 6,
     driveFolderId: '',
+    bufferChannelId: '',
     captionTemplate: '',
     syncedDriveFileIds: [],
     lastPostedAt: null,

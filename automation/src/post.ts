@@ -1,18 +1,8 @@
 import { readdir, mkdir, rename, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { loadChannels, saveChannels, isDue, publicRawUrl, INBOX_ROOT, POSTED_ROOT } from './config.js';
-import type { ChannelConfig, PublishFn, Platform } from './config.js';
-import { publish as publishFacebook } from './platforms/facebook.js';
-import { publish as publishInstagram } from './platforms/instagram.js';
-import { publish as publishPinterest } from './platforms/pinterest.js';
-import { publish as publishTiktok } from './platforms/tiktok.js';
-
-const PUBLISHERS: Record<Platform, PublishFn> = {
-  facebook: publishFacebook,
-  instagram: publishInstagram,
-  pinterest: publishPinterest,
-  tiktok: publishTiktok,
-};
+import type { ChannelConfig } from './config.js';
+import { publishViaBuffer } from './buffer.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -70,10 +60,9 @@ async function main() {
 
     const caption = await resolveCaption(imagePath, channel);
     const publicImageUrl = publicRawUrl(imagePath);
-    const publishFn = PUBLISHERS[channel.platform];
 
-    console.log(`[${channel.id}] posting ${imagePath} to ${channel.platform}`);
-    await publishFn({ imagePath, publicImageUrl, caption, channel });
+    console.log(`[${channel.id}] posting ${imagePath} to ${channel.platform} via Buffer`);
+    await publishViaBuffer({ publicImageUrl, caption, channel });
 
     await movePosted(imagePath, channel.id);
     channel.lastPostedAt = now.toISOString();

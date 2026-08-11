@@ -1,85 +1,66 @@
 # dearlavion-social-media-manager
 
-Automates posting images to Instagram, TikTok, Pinterest, and Facebook, each on its own schedule. Images are dropped into a Google Drive folder; a GitHub Actions workflow syncs them into this repo, and another posts the oldest un-posted image for each due channel. A small local admin UI manages which channels exist and how often they post.
+Automates posting images to Instagram, TikTok, and Facebook, each on its own schedule. Images are dropped into a Google Drive folder; a GitHub Actions workflow syncs them into this repo, and another posts the oldest un-posted image for each due channel via [Buffer](https://buffer.com), which holds the actual OAuth connection to each platform. A small admin UI (hosted on GitHub Pages) manages which channels exist and how often they post.
 
 No server to host: everything runs as scheduled GitHub Actions workflows.
 
 ## How it works
 
 1. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for each enabled channel, lists new images in its configured Google Drive folder and commits them into `inbox/<channelId>/`.
-2. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest image in `inbox/<channelId>/` to that channel's platform, then moves it to `posted/<channelId>/` and updates `lastPostedAt`.
-3. **Admin UI** (`admin-ui/`, run locally): add/edit/enable channels — platform, posting interval, Drive folder — by editing `config/channels.json` directly on GitHub through your browser.
+2. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest image in `inbox/<channelId>/` to that channel's Buffer channel (`shareNow`, published immediately — our cron is what decides *when*, Buffer's own queue isn't used), then moves it to `posted/<channelId>/` and updates `lastPostedAt`.
+3. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): add/edit/enable channels — platform, posting interval, Drive folder, Buffer channel — by editing `config/channels.json` directly on GitHub through your browser.
+
+### Why Buffer instead of each platform's API directly
+
+Integrating Instagram/TikTok/Facebook's APIs directly means registering a separate developer app with each of them — real setup friction, and TikTok in particular gates public posting behind app review. Buffer's already done that OAuth registration for all of them: you connect each account once inside Buffer's own UI, and this repo only needs a single Buffer API token. Trade-off: Buffer's **free plan caps you at 3 connected channels** (which is exactly Instagram + TikTok + Facebook — why Pinterest was dropped), and API access requires that a Buffer account exists at all. Paid plans start at $5/channel/mo if you want more.
 
 ## One-time setup
 
 ### 1. Push this repo to GitHub
 
-This was scaffolded locally and committed, but not pushed anywhere. Create `dearlavion/dearlavion-social-media-manager` (or wherever you want it) on GitHub and push.
+Already done — pushed to `dearlavion/dearlavion-social-media-manager`.
 
-**Important:** Instagram and Pinterest publish from a public image URL (`raw.githubusercontent.com/...`), not a binary upload — so this repo needs to be **public**, or those two platforms won't be able to fetch the image. Facebook and TikTok don't have this requirement.
+**Important:** Buffer's `createPost` only accepts a publicly-fetchable image URL (`raw.githubusercontent.com/...`), not a binary upload — so this repo needs to stay **public**, or posting will fail for every channel.
 
 ### 2. Google Drive — image source
 
 1. In Google Cloud Console, create a project (or reuse one), enable the **Google Drive API**.
-2. Create a **service account**, generate a JSON key.
+2. Create a **service account** (no IAM project role needed — Drive access comes from sharing the folder, not from a project role), generate a JSON key.
 3. Share each Drive folder you'll use as an image source with that service account's email (Viewer access is enough).
 4. Add the full JSON key as a GitHub repo secret named `GDRIVE_SERVICE_ACCOUNT_JSON` (Settings → Secrets and variables → Actions).
 
-### 3. Facebook — simplest of the four
+### 3. Buffer — connects to Instagram, TikTok, and Facebook
 
-1. Create a Meta developer app at developers.facebook.com, add the Facebook Login/Pages product.
-2. Generate a Page access token for the Page you'll post to (long-lived, `pages_manage_posts` + `pages_read_engagement` scopes).
-3. Add secrets: `FACEBOOK_PAGE_ID`, `FACEBOOK_PAGE_ACCESS_TOKEN`.
+1. Create a free account at [buffer.com](https://buffer.com) if you don't have one, and connect your Instagram, TikTok, and Facebook accounts to it from Buffer's own dashboard (that's where the real OAuth happens — nothing to register yourself).
+2. Get a personal API key: Buffer account → **Settings → API** ([buffer.com/settings/api](https://publish.buffer.com/settings/api)) → create a personal API key.
+3. Add it as a GitHub repo secret named `BUFFER_ACCESS_TOKEN`.
+4. For each connected account, find its **Buffer channel ID** — query Buffer's GraphQL API (`https://api.buffer.com`) with your token:
+   ```graphql
+   query { account { organizations { id } } }
+   ```
+   then, using that organization id:
+   ```graphql
+   query { channels(input: { organizationId: "YOUR_ORG_ID" }) { id name service } }
+   ```
+   Match `service` (instagram/tiktok/facebook) to the right channel and copy its `id` — that's the `bufferChannelId` you'll enter in the admin UI per channel.
 
-### 4. Instagram — needs a Business/Creator account
+### 4. Enable/configure channels
 
-1. Your Instagram account must be a Business or Creator account, linked to a Facebook Page.
-2. In the same (or another) Meta developer app, add the Instagram Graph API product.
-3. Get the IG user ID (`GET /{page-id}?fields=instagram_business_account`) and a long-lived access token with `instagram_content_publish` scope.
-4. Add secrets: `INSTAGRAM_BUSINESS_ACCOUNT_ID`, `INSTAGRAM_ACCESS_TOKEN`.
-5. **Reminder:** requires the repo to be public (see above) so `graph.facebook.com` can fetch the image URL.
+Open the admin UI: **https://dearlavion.github.io/dearlavion-social-media-manager/**
 
-### 5. Pinterest
+Fill in your repo owner/name/branch (pre-filled by default), paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permission (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`), then load, edit, and save `config/channels.json`.
 
-1. Register an app at developers.pinterest.com, complete OAuth to get an access token with `pins:write` scope for the board you'll post to.
-2. Add secrets: `PINTEREST_BOARD_ID`, `PINTEREST_ACCESS_TOKEN`.
+Each channel needs: a unique `id`, `platform` (label only, for your own reference), `intervalHours`, `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`. To override the caption for one specific image, drop a `<image-filename>.caption.txt` file next to it in the Drive folder (or directly in `inbox/<channelId>/`) — it's used instead of the template and moved along with the image once posted.
 
-### 6. TikTok — expect friction
+If you ever want to run the admin UI locally instead: `cd admin-ui && npm install && npm start`, then open http://localhost:4201. (It redeploys to GitHub Pages automatically via `.github/workflows/deploy-admin-ui.yml` on every push to `main` that touches `admin-ui/`.)
 
-1. Register an app at developers.tiktok.com and request the Content Posting API.
-2. **TikTok gates public/direct posting behind app review.** Until your app is approved, `platforms/tiktok.ts` posts with `privacy_level: "SELF_ONLY"` so it only reaches your own account — change that once you're approved for public posting.
-3. Add secret: `TIKTOK_ACCESS_TOKEN`.
-
-### 7. Enable/configure channels
-
-**Hosted (recommended):** `.github/workflows/deploy-admin-ui.yml` builds `admin-ui/` and deploys it to GitHub Pages on every push to `main` that touches `admin-ui/`. One-time setup: on GitHub, go to **Settings → Pages → Build and deployment → Source**, and select **GitHub Actions** (this can't be done via git/API, it's a repo-settings toggle only you can make). After that, push once (or run the workflow manually) and the UI is live at:
-
-```
-https://dearlavion.github.io/dearlavion-social-media-manager/
-```
-
-Note: GitHub Pages needs a public repo unless you're on a paid GitHub plan — which you need anyway for the Instagram/Pinterest public-image-URL requirement above.
-
-**Local (alternative):** run it on your own machine instead:
-
-```bash
-cd admin-ui
-npm install
-npm start
-```
-Open http://localhost:4201.
-
-Either way: fill in your repo owner/name/branch, paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permission (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`), then load, edit, and save `config/channels.json`.
-
-Each channel needs: a unique `id`, `platform`, `intervalHours`, `driveFolderId`, and a default `captionTemplate`. To override the caption for one specific image, drop a `<image-filename>.caption.txt` file next to it in the Drive folder (or directly in `inbox/<channelId>/`) — it's used instead of the template and moved along with the image once posted.
-
-### 8. Turn it on
+### 5. Turn it on
 
 Workflows run on their cron schedule automatically once secrets are set and at least one channel has `"enabled": true`. To test without waiting for the schedule, trigger either workflow manually from the Actions tab (`workflow_dispatch`).
 
 ## Local development / dry runs
 
-Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or the platform APIs — useful for checking the due-check/file-picking logic without live credentials:
+Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or Buffer — useful for checking the due-check/file-picking logic without live credentials:
 
 ```bash
 cd automation
@@ -91,10 +72,10 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager npm ru
 ## Repo layout
 
 ```
-.github/workflows/   sync-drive.yml, post.yml — the two scheduled jobs
-automation/          Node/TS scripts the workflows run (config, drive sync, per-platform publish)
-config/channels.json the list of channels — id, platform, interval, Drive folder, caption
+.github/workflows/   sync-drive.yml, post.yml, deploy-admin-ui.yml
+automation/          Node/TS scripts the workflows run (config, drive sync, buffer.ts publish)
+config/channels.json the list of channels — id, platform, interval, Drive folder, Buffer channel, caption
 inbox/<channelId>/   images synced from Drive, waiting to be posted
 posted/<channelId>/  images after a successful post
-admin-ui/            local Angular app for editing config/channels.json via the GitHub API
+admin-ui/            Angular app (hosted on GitHub Pages) for editing config/channels.json via the GitHub API
 ```
