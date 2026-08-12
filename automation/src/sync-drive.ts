@@ -8,9 +8,13 @@ function sanitize(name: string): string {
 
 async function main() {
   const channels = await loadChannels();
+  // Set by the admin UI's per-channel "Post now" button, to sync/post one
+  // specific channel on demand without needing to flip its enabled flag.
+  const forceChannelId = process.env['FORCE_CHANNEL_ID'];
 
   for (const channel of channels) {
-    if (!channel.enabled) continue;
+    const forced = forceChannelId === channel.id;
+    if (!channel.enabled && !forced) continue;
 
     const newFiles = await listNewFiles(channel.driveFolderId, channel.syncedDriveFileIds);
     if (newFiles.length === 0) {

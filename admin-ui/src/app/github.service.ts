@@ -73,12 +73,16 @@ export class GithubService {
    * addition to Contents. Does not force a post outside its due-check --
    * it just runs the workflow right now instead of waiting for its cron.
    */
-  async triggerWorkflow(conn: GithubConnection, workflowFile: string): Promise<void> {
+  async triggerWorkflow(
+    conn: GithubConnection,
+    workflowFile: string,
+    inputs?: Record<string, string>,
+  ): Promise<void> {
     const url = `https://api.github.com/repos/${conn.owner}/${conn.repo}/actions/workflows/${workflowFile}/dispatches`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { ...this.headers(conn), 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref: conn.branch }),
+      body: JSON.stringify({ ref: conn.branch, ...(inputs ? { inputs } : {}) }),
     });
     if (!res.ok) {
       throw new Error(`GitHub API error triggering ${workflowFile}: ${res.status} ${await res.text()}`);
@@ -108,10 +112,11 @@ export class GithubService {
   async triggerAndWait(
     conn: GithubConnection,
     workflowFile: string,
+    inputs?: Record<string, string>,
     { timeoutMs = 180000, intervalMs = 4000 }: { timeoutMs?: number; intervalMs?: number } = {},
   ): Promise<WorkflowRun> {
     const sinceMs = Date.now();
-    await this.triggerWorkflow(conn, workflowFile);
+    await this.triggerWorkflow(conn, workflowFile, inputs);
 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {

@@ -1,101 +1,156 @@
-<main class="page">
-  <h1>Dear Lavion Social Media Manager</h1>
-  <p class="subtitle">
-    Edits <code>config/channels.json</code> directly on GitHub via the Contents API. Your token is
-    kept only in this browser tab's session storage — it is never sent anywhere except
-    <code>api.github.com</code>.
-  </p>
-
-  <section class="card">
-    <h2>Repository</h2>
-    <div class="connection-grid">
-      <label>
-        Owner
-        <input [(ngModel)]="connection.owner" placeholder="dearlavion" />
-      </label>
-      <label>
-        Repo
-        <input [(ngModel)]="connection.repo" placeholder="dearlavion-social-media-manager" />
-      </label>
-      <label>
-        Branch
-        <input [(ngModel)]="connection.branch" placeholder="main" />
-      </label>
-      <label>
-        GitHub token
-        <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT: contents + actions read/write" />
-      </label>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <span>Dear Lavion</span>
     </div>
-    <button type="button" (click)="load()" [disabled]="loading">
-      {{ loading ? 'Loading…' : 'Load channels.json' }}
-    </button>
-    <p class="hint">Token is only required to Save. Since this repo is public, Load works without one.</p>
-  </section>
+    <div class="nav-title">Social Media Manager</div>
+    <p class="sidebar-blurb">
+      Edits <code>config/channels.json</code> directly on GitHub. Your token stays in this browser
+      tab's session storage only.
+    </p>
 
-  @if (statusMessage) {
-    <p class="status">{{ statusMessage }}</p>
-  }
-  @if (errorMessage) {
-    <p class="error">{{ errorMessage }}</p>
-  }
+    <div class="nav-title">Quick links</div>
+    <nav class="nav">
+      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}" target="_blank" rel="noopener">
+        <span class="nav-icon">⌘</span><span>Repository</span>
+      </a>
+      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
+        <span class="nav-icon">▶</span><span>Workflow runs</span>
+      </a>
+      <a href="https://publish.buffer.com" target="_blank" rel="noopener">
+        <span class="nav-icon">↗</span><span>Buffer dashboard</span>
+      </a>
+    </nav>
+  </aside>
 
-  @if (loaded) {
-    <section class="card">
-      <h2>Channels</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Enabled</th>
-            <th>Id</th>
-            <th>Platform</th>
-            <th>Interval (h)</th>
-            <th>Drive folder ID</th>
-            <th>Buffer channel ID</th>
-            <th>Caption template</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (channel of channels; track $index) {
-            <tr>
-              <td><input type="checkbox" [(ngModel)]="channel.enabled" /></td>
-              <td><input [(ngModel)]="channel.id" placeholder="ig-main" /></td>
-              <td>
-                <select [(ngModel)]="channel.platform">
-                  @for (p of platforms; track p) {
-                    <option [value]="p">{{ p }}</option>
-                  }
-                </select>
-              </td>
-              <td><input type="number" min="1" [(ngModel)]="channel.intervalHours" /></td>
-              <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
-              <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
-              <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
-              <td><button type="button" class="danger" (click)="removeChannel($index)">Remove</button></td>
-            </tr>
-          }
-        </tbody>
-      </table>
-
-      <div class="actions">
-        <button type="button" (click)="addChannel()">Add channel</button>
-        <button type="button" (click)="save()" [disabled]="saving">
-          {{ saving ? 'Saving…' : 'Save to GitHub' }}
-        </button>
-        <button type="button" (click)="postNow()" [disabled]="postingNow">
-          {{ postingNow ? 'Working…' : 'Post now' }}
-        </button>
+  <main class="main">
+    <header class="topbar">
+      <div class="greeting">
+        <h1>Channels</h1>
+        <p>Configure which Drive folders post to which platforms, and how often.</p>
       </div>
-      <p class="hint">
-        "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
-        Buffer) — both immediately instead of waiting for their hourly cron. It still only posts channels whose
-        interval has actually elapsed and only images already synced. Save any edits first. Your token needs the
-        <strong>Actions: read and write</strong> permission for this button, in addition to Contents. Can take up to
-        a couple minutes; the status message above will update as each step finishes.
-        <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
-          View runs on GitHub →
-        </a>
-      </p>
+    </header>
+
+    <section class="card">
+      <div class="card-header"><h2>Repository connection</h2></div>
+      <div class="connection-grid">
+        <label>
+          Owner
+          <input [(ngModel)]="connection.owner" placeholder="dearlavion" />
+        </label>
+        <label>
+          Repo
+          <input [(ngModel)]="connection.repo" placeholder="dearlavion-social-media-manager" />
+        </label>
+        <label>
+          Branch
+          <input [(ngModel)]="connection.branch" placeholder="main" />
+        </label>
+        <label>
+          GitHub token
+          <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT: contents + actions read/write" />
+        </label>
+      </div>
+      <button type="button" class="btn-primary" (click)="load()" [disabled]="busy">
+        {{ loading ? 'Loading…' : 'Load channels.json' }}
+      </button>
+      <p class="hint">Token is only required to Save. Since this repo is public, Load works without one.</p>
     </section>
-  }
-</main>
+
+    @if (statusMessage) {
+      <p class="status">{{ statusMessage }}</p>
+    }
+    @if (errorMessage) {
+      <p class="error">{{ errorMessage }}</p>
+    }
+
+    @if (loaded) {
+      <section class="stats">
+        <div class="stat-card">
+          <div class="stat-top"><span>Channels</span><div class="stat-icon">▣</div></div>
+          <div class="stat-number">{{ channels.length }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top"><span>Enabled</span><div class="stat-icon">◉</div></div>
+          <div class="stat-number">{{ enabledCount }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top"><span>Repository</span><div class="stat-icon">⌘</div></div>
+          <div class="stat-text">{{ connection.owner }}/{{ connection.repo }}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-top"><span>Branch</span><div class="stat-icon">⑂</div></div>
+          <div class="stat-text">{{ connection.branch }}</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><h2>Channels</h2></div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Enabled</th>
+                <th>Id</th>
+                <th>Platform</th>
+                <th>Interval (h)</th>
+                <th>Drive folder ID</th>
+                <th>Buffer channel ID</th>
+                <th>Caption template</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (channel of channels; track $index) {
+                <tr>
+                  <td><input type="checkbox" [(ngModel)]="channel.enabled" /></td>
+                  <td><input [(ngModel)]="channel.id" placeholder="ig-main" /></td>
+                  <td>
+                    <select [(ngModel)]="channel.platform">
+                      @for (p of platforms; track p) {
+                        <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td><input type="number" min="1" [(ngModel)]="channel.intervalHours" /></td>
+                  <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
+                  <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
+                  <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
+                  <td class="row-actions">
+                    <button type="button" class="btn-ghost" (click)="postChannelNow(channel)" [disabled]="busy">
+                      {{ postingChannelId === channel.id ? 'Working…' : 'Post now' }}
+                    </button>
+                    <button type="button" class="btn-danger" (click)="removeChannel($index)" [disabled]="busy">Remove</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="actions">
+          <button type="button" class="btn-secondary" (click)="addChannel()" [disabled]="busy">Add channel</button>
+          <button type="button" class="btn-secondary" (click)="save()" [disabled]="busy">
+            {{ saving ? 'Saving…' : 'Save to GitHub' }}
+          </button>
+          <button type="button" class="btn-primary" (click)="postNow()" [disabled]="busy">
+            {{ postingNow ? 'Working…' : 'Post now (all channels)' }}
+          </button>
+        </div>
+        <p class="hint">
+          "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
+          Buffer) — both immediately instead of waiting for their hourly cron. The per-row <strong>Post now</strong>
+          does the same for just that one channel, ignoring its Enabled checkbox and interval — no need to enable a
+          channel just to test it. Either way it reads from what's already saved on GitHub, not unsaved edits in this
+          page — <strong>Save to GitHub first</strong> if you just changed something. Your token needs the
+          <strong>Actions: read and write</strong> permission for these buttons, in addition to Contents. Can take up
+          to a couple minutes; the status message above will update as each step finishes.
+          <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
+            View runs on GitHub →
+          </a>
+        </p>
+      </section>
+    }
+  </main>
+</div>

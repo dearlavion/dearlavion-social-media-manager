@@ -29,8 +29,17 @@ export class AppComponent implements OnInit {
   loading = false;
   saving = false;
   postingNow = false;
+  postingChannelId: string | null = null;
   statusMessage = '';
   errorMessage = '';
+
+  get busy(): boolean {
+    return this.loading || this.saving || this.postingNow || this.postingChannelId !== null;
+  }
+
+  get enabledCount(): number {
+    return this.channels.filter((c) => c.enabled).length;
+  }
 
   constructor(private readonly github: GithubService) {}
 
@@ -86,21 +95,22 @@ export class AppComponent implements OnInit {
     }
   }
 
-  async postNow(): Promise<void> {
+  private async runSyncThenPost(channelId?: string): Promise<void> {
     this.errorMessage = '';
     this.statusMessage = '';
-    this.postingNow = true;
+    const inputs = channelId ? { channel_id: channelId } : undefined;
+    const scope = channelId ? `"${channelId}"` : 'all enabled channels';
     try {
-      this.statusMessage = 'Syncing images from Google Drive… (this can take a minute)';
-      const syncRun = await this.github.triggerAndWait(this.connection, 'sync-drive.yml');
+      this.statusMessage = `Syncing Drive images for ${scope}… (this can take a minute)`;
+      const syncRun = await this.github.triggerAndWait(this.connection, 'sync-drive.yml', inputs);
       if (syncRun.conclusion !== 'success') {
         throw new Error(
           `sync-drive.yml finished with "${syncRun.conclusion}", so posting was skipped. Check the run: ${syncRun.html_url}`,
         );
       }
 
-      this.statusMessage = 'Sync complete. Posting any due channel…';
-      const postRun = await this.github.triggerAndWait(this.connection, 'post.yml');
+      this.statusMessage = `Sync complete. Posting for ${scope}…`;
+      const postRun = await this.github.triggerAndWait(this.connection, 'post.yml', inputs);
 
       this.statusMessage = `Done: sync-drive succeeded, post finished with "${postRun.conclusion}". Run: ${postRun.html_url}`;
       if (postRun.conclusion !== 'success') {
@@ -108,8 +118,24 @@ export class AppComponent implements OnInit {
       }
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  async postNow(): Promise<void> {
+    this.postingNow = true;
+    try {
+      await this.runSyncThenPost();
     } finally {
       this.postingNow = false;
+    }
+  }
+
+  async postChannelNow(channel: ChannelConfig): Promise<void> {
+    this.postingChannelId = channel.id;
+    try {
+      await this.runSyncThenPost(channel.id);
+    } finally {
+      this.postingChannelId = null;
     }
   }
 

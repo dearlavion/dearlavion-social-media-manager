@@ -2,6 +2,11 @@ name: Sync Drive images
 
 on:
   workflow_dispatch:
+    inputs:
+      channel_id:
+        description: 'Force-sync only this channel id, ignoring its enabled flag'
+        required: false
+        type: string
   schedule:
     - cron: '0 * * * *' # every hour, on the hour (UTC)
 
@@ -28,6 +33,7 @@ jobs:
         working-directory: automation
         env:
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          FORCE_CHANNEL_ID: ${{ github.event.inputs.channel_id }}
         run: npm run sync-drive
 
       - name: Commit synced images

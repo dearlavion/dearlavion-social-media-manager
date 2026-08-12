@@ -44,10 +44,14 @@ async function movePosted(imagePath: string, channelId: string): Promise<void> {
 async function main() {
   const channels = await loadChannels();
   const now = new Date();
+  // Set by the admin UI's per-channel "Post now" button, to post one
+  // specific channel on demand, ignoring its enabled flag and due-check.
+  const forceChannelId = process.env['FORCE_CHANNEL_ID'];
 
   for (const channel of channels) {
-    if (!channel.enabled) continue;
-    if (!isDue(channel, now)) {
+    const forced = forceChannelId === channel.id;
+    if (!channel.enabled && !forced) continue;
+    if (!forced && !isDue(channel, now)) {
       console.log(`[${channel.id}] not due yet`);
       continue;
     }
