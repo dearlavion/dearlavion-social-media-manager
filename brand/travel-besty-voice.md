@@ -1,6 +1,6 @@
 # TravelBesty — Brand Voice & Content Guide
 
-Source: Alysson's Fundamentals of Marketing coursework (customer persona, positioning, funnel plan, promotions plan). This doc distills that work into a reusable reference for writing captions, replies, and any future AI-assisted content for TravelBesty's social channels.
+Source: Fundamentals of Marketing coursework (customer persona, positioning, funnel plan, promotions plan). This doc distills that work into a reusable reference for writing captions, replies, and any future AI-assisted content for TravelBesty's social channels.
 
 ## What TravelBesty is
 
@@ -21,7 +21,7 @@ Reuse these verbatim where they fit — they're the tested language, not just in
 
 ## Who we're talking to
 
-**Aly, 29, Taguig** — working professional, travels 3-5x/year (domestic + international), disposable income, mobile-first and social-native (lives on TikTok, Instagram, Facebook).
+**Mia, 23, Pasig** — working professional, travels 3-5x/year (domestic + international), disposable income, mobile-first and social-native (lives on TikTok, Instagram, Facebook).
 
 - **Wants:** to be well-prepared without overpacking; to save time not shopping across a dozen sites; recommendations tailored to her actual trip.
 - **Pain points:** forgets essentials; buys unnecessary items while missing important ones; multiple shipping fees and arrival-anxiety from scattered/overseas orders; cheap items that break in small packing spaces.
