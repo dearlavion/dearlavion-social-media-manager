@@ -1,11 +1,11 @@
 [
   {
-    "id": "example-facebook",
-    "platform": "facebook",
+    "id": "travel-besty-instagram",
+    "platform": "instagram",
     "enabled": false,
     "intervalHours": 6,
-    "driveFolderId": "REPLACE_WITH_GOOGLE_DRIVE_FOLDER_ID",
-    "bufferChannelId": "REPLACE_WITH_BUFFER_CHANNEL_ID",
+    "driveFolderId": "1dkpRsDwYv2ckHG2nactxf93ZgwR74L1I",
+    "bufferChannelId": "6a7b44a5b2d9d57743598172",
     "captionTemplate": "New drop ✨",
     "syncedDriveFileIds": [],
     "lastPostedAt": null
