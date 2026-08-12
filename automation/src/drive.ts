@@ -15,7 +15,16 @@ function driveClient() {
   if (!raw) {
     throw new Error('GDRIVE_SERVICE_ACCOUNT_JSON env var is not set');
   }
-  const credentials = JSON.parse(raw);
+  let credentials: object;
+  try {
+    credentials = JSON.parse(raw);
+  } catch (err) {
+    throw new Error(
+      'GDRIVE_SERVICE_ACCOUNT_JSON is not valid JSON. It must be the exact raw contents of the ' +
+        'downloaded service account key file (starting with "{" and ending with "}"), pasted as-is ' +
+        `into the GitHub secret -- no surrounding quotes added. Underlying error: ${(err as Error).message}`,
+    );
+  }
   const auth = new google.auth.GoogleAuth({
     credentials,
     scopes: ['https://www.googleapis.com/auth/drive.readonly'],
