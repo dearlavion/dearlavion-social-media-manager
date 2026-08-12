@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChannelConfig, PLATFORMS, newChannel } from './channel.model';
+import { ChannelConfig, PLATFORMS, INSTAGRAM_POST_TYPES, newChannel } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
@@ -15,6 +15,7 @@ const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 })
 export class AppComponent implements OnInit {
   readonly platforms = PLATFORMS;
+  readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
 
   connection: GithubConnection = {
     owner: 'dearlavion',
@@ -69,7 +70,11 @@ export class AppComponent implements OnInit {
     try {
       this.persistConnection();
       const { channels, sha } = await this.github.loadChannels(this.connection);
-      this.channels = channels;
+      // Backfill for channels saved before instagramPostType existed, so the
+      // dropdown shows the same default ("post") the automation actually uses.
+      this.channels = channels.map((c) =>
+        c.platform === 'instagram' && !c.instagramPostType ? { ...c, instagramPostType: 'post' } : c,
+      );
       this.sha = sha;
       this.loaded = true;
       this.statusMessage = `Loaded ${channels.length} channel(s) from ${this.connection.owner}/${this.connection.repo}@${this.connection.branch}.`;

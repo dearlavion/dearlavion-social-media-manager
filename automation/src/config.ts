@@ -12,6 +12,9 @@ export const POSTED_ROOT = path.join(REPO_ROOT, 'posted');
 /** Informational only — the actual publish target is `bufferChannelId`, which already knows its own platform on Buffer's side. */
 export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
+/** Only meaningful when platform is "instagram" -- Buffer requires this on every Instagram post. Defaults to "post". */
+export type InstagramPostType = 'post' | 'story' | 'reel';
+
 export interface ChannelConfig {
   id: string;
   platform: Platform;
@@ -22,6 +25,7 @@ export interface ChannelConfig {
   captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
+  instagramPostType?: InstagramPostType;
 }
 
 function assertValidChannel(value: unknown, index: number): asserts value is ChannelConfig {
@@ -43,6 +47,9 @@ function assertValidChannel(value: unknown, index: number): asserts value is Cha
   }
   if (c.enabled && (typeof c.bufferChannelId !== 'string' || !c.bufferChannelId)) {
     throw new Error(`config/channels.json[${index}] (${c.id}): "bufferChannelId" must be a non-empty string when enabled`);
+  }
+  if (c.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(c.instagramPostType)) {
+    throw new Error(`config/channels.json[${index}] (${c.id}): invalid "instagramPostType" "${c.instagramPostType}"`);
   }
 }
 

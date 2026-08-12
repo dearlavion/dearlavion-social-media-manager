@@ -68,9 +68,17 @@ export async function publishViaBuffer(params: {
     throw new Error(`Channel "${channel.id}" has no bufferChannelId configured`);
   }
 
+  // Instagram requires an explicit post type (post/story/reel) -- without it
+  // Buffer rejects the request with "Invalid post: Instagram posts require a type".
+  const metadata =
+    channel.platform === 'instagram'
+      ? { instagram: { type: channel.instagramPostType ?? 'post' } }
+      : undefined;
+
   if (DRY_RUN) {
     console.log(
-      `[DRY_RUN][buffer] would post to Buffer channel ${channel.bufferChannelId} (${channel.platform}): "${caption}" with image ${publicImageUrl}`,
+      `[DRY_RUN][buffer] would post to Buffer channel ${channel.bufferChannelId} (${channel.platform}): ` +
+        `"${caption}" with image ${publicImageUrl}${metadata ? `, metadata=${JSON.stringify(metadata)}` : ''}`,
     );
     return;
   }
@@ -82,6 +90,7 @@ export async function publishViaBuffer(params: {
       assets: [{ image: { url: publicImageUrl } }],
       mode: 'shareNow',
       schedulingType: 'automatic',
+      ...(metadata ? { metadata } : {}),
     },
   });
 

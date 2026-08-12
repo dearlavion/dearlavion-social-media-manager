@@ -257,6 +257,10 @@ input[type='checkbox'] {
   color: var(--color-ink);
 }
 
+.muted {
+  color: var(--color-ink-soft);
+}
+
 /* TABLE */
 
 .table-scroll {
