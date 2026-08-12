@@ -98,4 +98,6 @@ export async function publishViaBuffer(params: {
   if (result.createPost.message) {
     throw new Error(`Buffer createPost failed: ${result.createPost.message}`);
   }
+
+  console.log(`[${channel.id}] Buffer accepted the post: id=${result.createPost.post?.id}`);
 }
