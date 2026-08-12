@@ -91,9 +91,21 @@ export class AppComponent implements OnInit {
     this.statusMessage = '';
     this.postingNow = true;
     try {
-      await this.github.triggerWorkflow(this.connection, 'post.yml');
-      this.statusMessage =
-        'Triggered the "Post due channels" workflow. It only posts channels whose interval has elapsed -- check the Actions tab for the run.';
+      this.statusMessage = 'Syncing images from Google Drive… (this can take a minute)';
+      const syncRun = await this.github.triggerAndWait(this.connection, 'sync-drive.yml');
+      if (syncRun.conclusion !== 'success') {
+        throw new Error(
+          `sync-drive.yml finished with "${syncRun.conclusion}", so posting was skipped. Check the run: ${syncRun.html_url}`,
+        );
+      }
+
+      this.statusMessage = 'Sync complete. Posting any due channel…';
+      const postRun = await this.github.triggerAndWait(this.connection, 'post.yml');
+
+      this.statusMessage = `Done: sync-drive succeeded, post finished with "${postRun.conclusion}". Run: ${postRun.html_url}`;
+      if (postRun.conclusion !== 'success') {
+        this.errorMessage = `The post run itself reported "${postRun.conclusion}" -- check its log for the actual error.`;
+      }
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {

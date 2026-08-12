@@ -83,14 +83,16 @@
           {{ saving ? 'Saving…' : 'Save to GitHub' }}
         </button>
         <button type="button" (click)="postNow()" [disabled]="postingNow">
-          {{ postingNow ? 'Triggering…' : 'Post now' }}
+          {{ postingNow ? 'Working…' : 'Post now' }}
         </button>
       </div>
       <p class="hint">
-        "Post now" runs the post.yml workflow immediately instead of waiting for its hourly cron — it still only
-        posts channels whose interval has actually elapsed. Save any edits first. Your token needs the
-        <strong>Actions: read and write</strong> permission for this button, in addition to Contents.
-        <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions/workflows/post.yml" target="_blank" rel="noopener">
+        "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
+        Buffer) — both immediately instead of waiting for their hourly cron. It still only posts channels whose
+        interval has actually elapsed and only images already synced. Save any edits first. Your token needs the
+        <strong>Actions: read and write</strong> permission for this button, in addition to Contents. Can take up to
+        a couple minutes; the status message above will update as each step finishes.
+        <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
           View runs on GitHub →
         </a>
       </p>
