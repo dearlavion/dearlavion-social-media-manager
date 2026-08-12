@@ -68,11 +68,12 @@ export async function publishViaBuffer(params: {
     throw new Error(`Channel "${channel.id}" has no bufferChannelId configured`);
   }
 
-  // Instagram requires an explicit post type (post/story/reel) -- without it
-  // Buffer rejects the request with "Invalid post: Instagram posts require a type".
+  // Instagram requires an explicit post type (post/story/reel) plus
+  // shouldShareToFeed -- both are non-optional in Buffer's schema, even
+  // though only "reel" really has a meaningful choice here.
   const metadata =
     channel.platform === 'instagram'
-      ? { instagram: { type: channel.instagramPostType ?? 'post' } }
+      ? { instagram: { type: channel.instagramPostType ?? 'post', shouldShareToFeed: true } }
       : undefined;
 
   if (DRY_RUN) {
