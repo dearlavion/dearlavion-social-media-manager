@@ -1,10 +1,37 @@
+/* Travel Besty — design tokens extracted from the travel-kit mockups (homepage/travel/shop). */
+:root {
+  --color-bg: #ffffff;
+  --color-ink: #3a2e2e;
+  --color-ink-soft: #7a6b68;
+  --color-coral: #e38b4e;
+  --color-coral-deep: #c96a2e;
+  --color-marigold: #f2ae3e;
+  --color-leaf: #6e9b5c;
+  --color-lavender: #b695c4;
+  --color-line: #efe6e1;
+
+  --tint-cream: #fdf7ee;
+  --tint-pink: #fce9ec;
+  --tint-green: #ebf2e4;
+  --tint-lavender: #f3ebf5;
+  --tint-marigold: #fbeedc;
+  --tint-yellow: #fefbe9;
+  --tint-blue: #e2f1fa;
+  --tint-violet: #ede1f5;
+
+  --font-heading: 'Fraunces', serif;
+  --font-body: 'Quicksand', sans-serif;
+
+  color-scheme: light;
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
-  background: #0b0d12;
-  color: #f5f7fb;
+  font-family: var(--font-body);
+  background: var(--color-bg);
+  color: var(--color-ink);
 }
