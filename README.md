@@ -4,6 +4,8 @@ Automates posting images to Instagram, TikTok, and Facebook, each on its own sch
 
 No server to host: everything runs as scheduled GitHub Actions workflows.
 
+Brand voice and content guidelines for what actually gets written in captions live in [`brand/travel-besty-voice.md`](brand/travel-besty-voice.md) — read that before writing `captionTemplate` values or any future caption-generation step.
+
 ## How it works
 
 1. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for each enabled channel, lists new images in its configured Google Drive folder and commits them into `inbox/<channelId>/`.
