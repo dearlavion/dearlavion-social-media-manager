@@ -28,6 +28,7 @@ export class AppComponent implements OnInit {
   loaded = false;
   loading = false;
   saving = false;
+  postingNow = false;
   statusMessage = '';
   errorMessage = '';
 
@@ -82,6 +83,21 @@ export class AppComponent implements OnInit {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
       this.saving = false;
+    }
+  }
+
+  async postNow(): Promise<void> {
+    this.errorMessage = '';
+    this.statusMessage = '';
+    this.postingNow = true;
+    try {
+      await this.github.triggerWorkflow(this.connection, 'post.yml');
+      this.statusMessage =
+        'Triggered the "Post due channels" workflow. It only posts channels whose interval has elapsed -- check the Actions tab for the run.';
+    } catch (err) {
+      this.errorMessage = err instanceof Error ? err.message : String(err);
+    } finally {
+      this.postingNow = false;
     }
   }
 

@@ -48,9 +48,11 @@ Already done — pushed to `dearlavion/dearlavion-social-media-manager`.
 
 Open the admin UI: **https://dearlavion.github.io/dearlavion-social-media-manager/**
 
-Fill in your repo owner/name/branch (pre-filled by default), paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permission (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`), then load, edit, and save `config/channels.json`.
+Loading `channels.json` works with no token at all, since the repo is public. To **Save** edits or use **Post now**, paste a **fine-grained GitHub PAT** scoped to this repo with both `Contents: read and write` and `Actions: read and write` permissions (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`).
 
 Each channel needs: a unique `id`, `platform` (label only, for your own reference), `intervalHours`, `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`. To override the caption for one specific image, drop a `<image-filename>.caption.txt` file next to it in the Drive folder (or directly in `inbox/<channelId>/`) — it's used instead of the template and moved along with the image once posted.
+
+The **Post now** button triggers the `post.yml` workflow immediately (same as clicking "Run workflow" on the Actions tab) instead of waiting for its hourly cron — it still only posts channels whose `intervalHours` has actually elapsed, it doesn't force a post. Save any edits before using it.
 
 If you ever want to run the admin UI locally instead: `cd admin-ui && npm install && npm start`, then open http://localhost:4201. (It redeploys to GitHub Pages automatically via `.github/workflows/deploy-admin-ui.yml` on every push to `main` that touches `admin-ui/`.)
 

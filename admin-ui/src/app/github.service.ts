@@ -66,4 +66,22 @@ export class GithubService {
     const body = (await res.json()) as { content: { sha: string } };
     return body.content.sha;
   }
+
+  /**
+   * Triggers a workflow_dispatch run (same as clicking "Run workflow" on the
+   * Actions tab). Requires a token with the "Actions: write" permission in
+   * addition to Contents. Does not force a post outside its due-check --
+   * it just runs the workflow right now instead of waiting for its cron.
+   */
+  async triggerWorkflow(conn: GithubConnection, workflowFile: string): Promise<void> {
+    const url = `https://api.github.com/repos/${conn.owner}/${conn.repo}/actions/workflows/${workflowFile}/dispatches`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { ...this.headers(conn), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: conn.branch }),
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub API error triggering ${workflowFile}: ${res.status} ${await res.text()}`);
+    }
+  }
 }

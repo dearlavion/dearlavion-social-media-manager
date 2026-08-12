@@ -23,7 +23,7 @@
       </label>
       <label>
         GitHub token
-        <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT, contents: read/write" />
+        <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT: contents + actions read/write" />
       </label>
     </div>
     <button type="button" (click)="load()" [disabled]="loading">
@@ -82,7 +82,18 @@
         <button type="button" (click)="save()" [disabled]="saving">
           {{ saving ? 'Saving…' : 'Save to GitHub' }}
         </button>
+        <button type="button" (click)="postNow()" [disabled]="postingNow">
+          {{ postingNow ? 'Triggering…' : 'Post now' }}
+        </button>
       </div>
+      <p class="hint">
+        "Post now" runs the post.yml workflow immediately instead of waiting for its hourly cron — it still only
+        posts channels whose interval has actually elapsed. Save any edits first. Your token needs the
+        <strong>Actions: read and write</strong> permission for this button, in addition to Contents.
+        <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions/workflows/post.yml" target="_blank" rel="noopener">
+          View runs on GitHub →
+        </a>
+      </p>
     </section>
   }
 </main>
