@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project, PLATFORMS, INSTAGRAM_POST_TYPES, PUBLISHERS, newChannel } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 import { WikiComponent } from './wiki.component';
+import { SchedulerComponent } from './scheduler.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, WikiComponent],
+  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
@@ -19,7 +20,7 @@ export class AppComponent implements OnInit {
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
-  view: 'dashboard' | 'wiki' | 'setup' = 'dashboard';
+  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' = 'dashboard';
 
   connection: GithubConnection = {
     owner: 'dearlavion',

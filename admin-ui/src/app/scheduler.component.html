@@ -1,0 +1,99 @@
+<div class="scheduler-page">
+  <header class="topbar">
+    <div class="greeting">
+      <h1>Scheduler</h1>
+      <p>
+        Personal reminders, not tied to any project. The pipeline checks hourly and, when one comes due, fails a
+        run on purpose so GitHub emails you its built-in "workflow run failed" notification -- see the Wiki for why.
+      </p>
+    </div>
+  </header>
+
+  @if (!loaded) {
+    <section class="card">
+      <div class="card-header"><h2>Reminders</h2></div>
+      <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading…' : 'Load reminders' }}
+      </button>
+      <p class="hint">Uses the repo connection set on Dashboard/Set Up. Works with no token.</p>
+    </section>
+  }
+
+  @if (statusMessage) {
+    <p class="status">{{ statusMessage }}</p>
+  }
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+
+  @if (loaded) {
+    <section class="card calendar-card">
+      <div class="calendar-header">
+        <button type="button" class="btn-secondary nav-btn" (click)="prevMonth()">‹</button>
+        <h2>{{ monthLabel }}</h2>
+        <button type="button" class="btn-secondary nav-btn" (click)="nextMonth()">›</button>
+        <button type="button" class="btn-secondary today-btn" (click)="goToday()">Today</button>
+      </div>
+
+      <div class="calendar-grid">
+        @for (label of weekdayLabels; track label) {
+          <div class="weekday-label">{{ label }}</div>
+        }
+        @for (week of weeks; track $index) {
+          @for (cellDay of week; track cellDay?.date ?? $index) {
+            @if (cellDay) {
+              <button
+                type="button"
+                class="day-cell"
+                [class.today]="cellDay.isToday"
+                [class.selected]="cellDay.date === selectedDate"
+                (click)="selectDate(cellDay.date)"
+              >
+                <span class="day-number">{{ cellDay.day }}</span>
+                @if (cellDay.reminders.length > 0) {
+                  <span class="day-dot"></span>
+                }
+              </button>
+            } @else {
+              <div class="day-cell empty"></div>
+            }
+          }
+        }
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-header"><h2>{{ selectedDateLabel }}</h2></div>
+
+      @if (selectedDateReminders.length === 0) {
+        <p class="hint">No reminders for this day yet.</p>
+      } @else {
+        <ul class="reminder-list">
+          @for (r of selectedDateReminders; track r.id) {
+            <li>
+              <span class="reminder-time">{{ r.time }}</span>
+              <span class="reminder-message">{{ r.message }}</span>
+              @if (r.notifiedAt) {
+                <span class="reminder-notified">✓ notified</span>
+              }
+              <button type="button" class="btn-danger reminder-remove" (click)="removeReminder(r.id)">Remove</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="add-reminder-row">
+        <input type="time" [(ngModel)]="newTime" />
+        <input type="text" [(ngModel)]="newMessage" placeholder="Reminder message" (keyup.enter)="addReminder()" />
+        <button type="button" class="btn-secondary" (click)="addReminder()">Add</button>
+      </div>
+
+      <button type="button" class="btn-primary save-btn" (click)="save()" [disabled]="saving">
+        {{ saving ? 'Saving…' : 'Save to GitHub' }}
+      </button>
+      <p class="hint">
+        Adding/removing here only changes this page until you Save. Needs a GitHub token (Contents: read and write).
+      </p>
+    </section>
+  }
+</div>

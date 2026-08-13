@@ -1,0 +1,47 @@
+name: ⏰ Reminders
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 * * * *' # every hour, 30 min past (offset from sync-drive/post)
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install automation deps
+        working-directory: automation
+        run: npm ci
+
+      - name: Check reminders
+        id: check
+        working-directory: automation
+        run: npm run reminders
+
+      - name: Commit updated reminders
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: mark due reminders as notified'
+          file_pattern: 'config/reminders.json'
+
+      # GitHub can't put custom text in its own notification email, so this
+      # deliberately fails the run to trigger GitHub's built-in "workflow
+      # run failed" email (Settings -> Notifications -> Actions must have
+      # failure emails enabled). The actual message is in the "Check
+      # reminders" step's log above, as a ::error:: annotation.
+      - name: Fail so GitHub sends a notification email
+        if: steps.check.outputs.due == 'true'
+        run: |
+          echo "A reminder is due -- see the 'Check reminders' step log above for the message."
+          exit 1

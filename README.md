@@ -68,6 +68,12 @@ If you ever want to run the admin UI locally instead: `cd admin-ui && npm instal
 
 Workflows run on their cron schedule automatically — across every project in `config/projects.json` — once secrets are set and at least one channel has `"enabled": true`. To test without waiting for the schedule, trigger either workflow manually from the Actions tab (`workflow_dispatch`), optionally passing `project_id` (and `channel_id`) to scope/force a single run.
 
+## Scheduler (personal reminders)
+
+**Scheduler** (admin UI, left menu) is a calendar for personal reminders, unrelated to any project — click a day, add a time and a message, **Save to GitHub**. `.github/workflows/reminders.yml` runs hourly; for any reminder whose date/time has passed and hasn't fired yet, it logs the message, marks it notified, commits `config/reminders.json`, and **deliberately fails the run** so GitHub's own built-in "workflow run failed" email notification fires — no external email service, no new secret.
+
+The real limitation: GitHub doesn't let a workflow put custom text into that notification email's body, only a link to the run — the actual message is the first line of the failed run's **Check reminders** step log. Confirm **[github.com/settings/notifications](https://github.com/settings/notifications) → Actions** has failure emails enabled (usually on by default for repos you own).
+
 ## Local development / dry runs
 
 Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or Buffer — useful for checking the due-check/file-picking logic without live credentials. They loop over every project in `config/projects.json` unless scoped:
@@ -88,12 +94,13 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 ## Repo layout
 
 ```
-.github/workflows/            sync-drive.yml, post.yml, deploy-admin-ui.yml
-automation/                   Node/TS scripts the workflows run (config, drive sync, buffer.ts publish)
+.github/workflows/            sync-drive.yml, post.yml, reminders.yml, deploy-admin-ui.yml
+automation/                   Node/TS scripts the workflows run (config, drive sync, publishers/, reminders.ts)
 config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
+config/reminders.json         personal reminders for the Scheduler -- [{id, date, time, dueAt, message, notifiedAt}]
 brand/<projectId>/voice.md    that project's brand voice/content guide
 inbox/<projectId>/<channelId>/    images synced from Drive, waiting to be posted
 posted/<projectId>/<channelId>/   images after a successful post
-admin-ui/                     Angular app (hosted on GitHub Pages) for editing projects/channels via the GitHub API
+admin-ui/                     Angular app (hosted on GitHub Pages) for editing projects/channels/reminders via the GitHub API
 ```

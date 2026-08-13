@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ChannelConfig, Project } from './channel.model';
+import { Reminder } from './reminder.model';
 
 export interface GithubConnection {
   owner: string;
@@ -9,6 +10,7 @@ export interface GithubConnection {
 }
 
 const PROJECTS_PATH = 'config/projects.json';
+const REMINDERS_PATH = 'config/reminders.json';
 
 function channelsPath(projectId: string): string {
   return `config/${projectId}/channels.json`;
@@ -51,6 +53,22 @@ export class GithubService {
     return { data: JSON.parse(base64ToUtf8(body.content)) as T, sha: body.sha };
   }
 
+  private async getFileOrDefault<T>(
+    conn: GithubConnection,
+    path: string,
+    defaultValue: T,
+  ): Promise<{ data: T; sha: string | null }> {
+    const res = await fetch(this.contentsUrl(conn, path), { headers: this.headers(conn) });
+    if (res.status === 404) {
+      return { data: defaultValue, sha: null };
+    }
+    if (!res.ok) {
+      throw new Error(`GitHub API error loading ${path}: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { content: string; sha: string };
+    return { data: JSON.parse(base64ToUtf8(body.content)) as T, sha: body.sha };
+  }
+
   private async putFile(
     conn: GithubConnection,
     path: string,
@@ -83,6 +101,16 @@ export class GithubService {
   /** Creates a brand-new project's channels.json (empty array) -- no sha needed since the file doesn't exist yet. */
   async createProjectChannelsFile(conn: GithubConnection, projectId: string): Promise<void> {
     await this.putFile(conn, channelsPath(projectId), [], null, `chore: add project ${projectId}`);
+  }
+
+  /** Falls back to an empty list if config/reminders.json doesn't exist yet on GitHub. */
+  async loadReminders(conn: GithubConnection): Promise<{ reminders: Reminder[]; sha: string | null }> {
+    const { data, sha } = await this.getFileOrDefault<Reminder[]>(conn, REMINDERS_PATH, []);
+    return { reminders: data, sha };
+  }
+
+  async saveReminders(conn: GithubConnection, reminders: Reminder[], sha: string | null): Promise<string> {
+    return this.putFile(conn, REMINDERS_PATH, reminders, sha, 'chore: update reminders');
   }
 
   async loadChannels(

@@ -6,10 +6,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const REPO_ROOT = path.resolve(__dirname, '../..');
 export const PROJECTS_PATH = path.join(REPO_ROOT, 'config', 'projects.json');
+export const REMINDERS_PATH = path.join(REPO_ROOT, 'config', 'reminders.json');
 
 export interface Project {
   id: string;
   name: string;
+}
+
+/**
+ * A personal reminder, not tied to any project. `date`/`time` are the
+ * user's local calendar day/time (for display and calendar grouping);
+ * `dueAt` is the UTC instant computed from those at creation time, which
+ * is what automation actually compares "now" against.
+ */
+export interface Reminder {
+  id: string;
+  date: string;
+  time: string;
+  dueAt: string;
+  message: string;
+  notifiedAt: string | null;
 }
 
 export function configPath(projectId: string): string {
@@ -71,6 +87,43 @@ export async function loadProjects(): Promise<Project[]> {
   }
   parsed.forEach((p, i) => assertValidProject(p, i));
   return parsed as Project[];
+}
+
+function assertValidReminder(value: unknown, index: number): asserts value is Reminder {
+  const r = value as Partial<Reminder>;
+  const path = `config/reminders.json[${index}]`;
+  if (typeof r.id !== 'string' || !r.id) {
+    throw new Error(`${path}: "id" must be a non-empty string`);
+  }
+  if (typeof r.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(r.date)) {
+    throw new Error(`${path} (${r.id}): "date" must be a YYYY-MM-DD string`);
+  }
+  if (typeof r.dueAt !== 'string' || Number.isNaN(new Date(r.dueAt).getTime())) {
+    throw new Error(`${path} (${r.id}): "dueAt" must be a valid ISO datetime string`);
+  }
+  if (typeof r.message !== 'string' || !r.message) {
+    throw new Error(`${path} (${r.id}): "message" must be a non-empty string`);
+  }
+}
+
+export async function loadReminders(): Promise<Reminder[]> {
+  let raw: string;
+  try {
+    raw = await readFile(REMINDERS_PATH, 'utf-8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw err;
+  }
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error('config/reminders.json must contain a JSON array');
+  }
+  parsed.forEach((r, i) => assertValidReminder(r, i));
+  return parsed as Reminder[];
+}
+
+export async function saveReminders(reminders: Reminder[]): Promise<void> {
+  await writeFile(REMINDERS_PATH, JSON.stringify(reminders, null, 2) + '\n', 'utf-8');
 }
 
 function assertValidChannel(projectId: string, value: unknown, index: number): asserts value is ChannelConfig {

@@ -6,6 +6,7 @@
   "scripts": {
     "sync-drive": "tsx src/sync-drive.ts",
     "post": "tsx src/post.ts",
+    "reminders": "tsx src/reminders.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
