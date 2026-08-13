@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "f68eb7db-e1d9-43f8-ae7f-af3afe639307",
+    "date": "2026-08-13",
+    "time": "22:00",
+    "dueAt": "2026-08-13T14:00:00.000Z",
+    "message": "Hello World!",
+    "notifiedAt": null
+  }
+]
