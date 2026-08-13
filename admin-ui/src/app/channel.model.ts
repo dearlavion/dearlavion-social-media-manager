@@ -12,6 +12,11 @@ export type InstagramPostType = 'post' | 'story' | 'reel';
 
 export const INSTAGRAM_POST_TYPES: InstagramPostType[] = ['post', 'story', 'reel'];
 
+/** Which backend actually publishes the post. Only "buffer" is implemented today -- see automation/src/publishers/. */
+export type Publisher = 'buffer';
+
+export const PUBLISHERS: Publisher[] = ['buffer'];
+
 export interface ChannelConfig {
   id: string;
   platform: Platform;
@@ -23,6 +28,7 @@ export interface ChannelConfig {
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
   instagramPostType?: InstagramPostType;
+  publisher?: Publisher;
 }
 
 export function newChannel(): ChannelConfig {
@@ -37,5 +43,6 @@ export function newChannel(): ChannelConfig {
     syncedDriveFileIds: [],
     lastPostedAt: null,
     instagramPostType: 'post',
+    publisher: 'buffer',
   };
 }

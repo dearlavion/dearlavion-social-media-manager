@@ -44,7 +44,8 @@
     <tbody>
       <tr><td>Enabled</td><td>Whether the hourly cron should pick this channel up automatically. Leave unchecked while testing — the per-row Post now button ignores this anyway.</td></tr>
       <tr><td>Id</td><td>A unique name for this channel within the project, e.g. <code>ig-main</code>.</td></tr>
-      <tr><td>Platform</td><td>Label only, for your reference — the real destination is the Buffer channel ID.</td></tr>
+      <tr><td>Platform</td><td>Label only, for your reference — the real destination is set by Posting tool + its ID field below.</td></tr>
+      <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
       <tr><td>Interval (h)</td><td>How many hours must pass since the last post before this channel is due again.</td></tr>
       <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls images from — the long id from the folder's share URL.</td></tr>
       <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>

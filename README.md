@@ -10,12 +10,14 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
 2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new images in its configured Google Drive folder and commits them into `inbox/<projectId>/<channelId>/`.
-3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest image in `inbox/<projectId>/<channelId>/` to that channel's Buffer channel (`shareNow`, published immediately — our cron is what decides *when*, Buffer's own queue isn't used), then moves it to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
+3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest image in `inbox/<projectId>/<channelId>/` via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves it to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
 4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser.
 
 ### Why Buffer instead of each platform's API directly
 
 Integrating Instagram/TikTok/Facebook's APIs directly means registering a separate developer app with each of them — real setup friction, and TikTok in particular gates public posting behind app review. Buffer's already done that OAuth registration for all of them: you connect each account once inside Buffer's own UI, and this repo only needs a single Buffer API token. Trade-off: Buffer's **free plan caps you at 3 connected channels** (across all projects combined), and API access requires that a Buffer account exists at all. Paid plans start at $5/channel/mo if you want more.
+
+The posting backend is pluggable per channel via its `publisher` field (**Posting tool** in the admin UI) — `automation/src/publishers/` is a small registry (`getPublisher(id)`), and `buffer` is the only one implemented so far. Adding a direct-platform integration (or another free tool) later means writing one new module matching the `PublishFn` signature and registering it — no other code changes, and existing channels keep working unchanged since `publisher` defaults to `"buffer"` when absent.
 
 ## One-time setup
 

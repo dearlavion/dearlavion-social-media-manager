@@ -1,5 +1,5 @@
-import type { ChannelConfig } from './config.js';
-import { DRY_RUN } from './config.js';
+import { DRY_RUN } from '../config.js';
+import type { PublishFn } from './types.js';
 
 const BUFFER_API_URL = 'https://api.buffer.com';
 
@@ -57,13 +57,7 @@ async function bufferGraphQL<T>(query: string, variables: Record<string, unknown
  * than adding to Buffer's own queue, since our GitHub Actions cron is
  * already the thing deciding *when* to post.
  */
-export async function publishViaBuffer(params: {
-  publicImageUrl: string;
-  caption: string;
-  channel: ChannelConfig;
-}): Promise<void> {
-  const { publicImageUrl, caption, channel } = params;
-
+export const publish: PublishFn = async ({ publicImageUrl, caption, channel }) => {
   if (!channel.bufferChannelId) {
     throw new Error(`Channel "${channel.id}" has no bufferChannelId configured`);
   }
@@ -100,4 +94,4 @@ export async function publishViaBuffer(params: {
   }
 
   console.log(`[${channel.id}] Buffer accepted the post: id=${result.createPost.post?.id}`);
-}
+};

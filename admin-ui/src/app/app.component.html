@@ -5,16 +5,19 @@
       <span>Dear Lavion</span>
     </div>
     <div class="nav-title">Social Media Manager</div>
-    <p class="sidebar-blurb">
-      Edits <code>config/&lt;project&gt;/channels.json</code> directly on GitHub. Your token stays in this
-      browser tab's session storage only.
-    </p>
 
-    <div class="nav-title">Quick links</div>
+    <div class="nav-title">Menu</div>
     <nav class="nav">
+      <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="view = 'dashboard'">
+        <span class="nav-icon">▦</span><span>Dashboard</span>
+      </button>
       <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="view = 'wiki'">
         <span class="nav-icon">📖</span><span>Wiki</span>
       </button>
+    </nav>
+
+    <div class="nav-title">Quick links</div>
+    <nav class="nav">
       <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}" target="_blank" rel="noopener">
         <span class="nav-icon">⌘</span><span>Repository</span>
       </a>
@@ -152,6 +155,7 @@
                 <th>Enabled</th>
                 <th>Id</th>
                 <th>Platform</th>
+                <th>Posting tool</th>
                 <th>Interval (h)</th>
                 <th>Drive folder ID</th>
                 <th>Buffer channel ID</th>
@@ -169,6 +173,13 @@
                     <select [(ngModel)]="channel.platform">
                       @for (p of platforms; track p) {
                         <option [value]="p">{{ p }}</option>
+                      }
+                    </select>
+                  </td>
+                  <td>
+                    <select [(ngModel)]="channel.publisher">
+                      @for (pub of publishers; track pub) {
+                        <option [value]="pub">{{ pub }}</option>
                       }
                     </select>
                   </td>

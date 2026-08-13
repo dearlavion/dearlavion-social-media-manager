@@ -30,6 +30,15 @@ export type Platform = 'instagram' | 'tiktok' | 'facebook';
 /** Only meaningful when platform is "instagram" -- Buffer requires this on every Instagram post. Defaults to "post". */
 export type InstagramPostType = 'post' | 'story' | 'reel';
 
+/**
+ * Which backend actually publishes the post. Only "buffer" is implemented
+ * today (see src/publishers/) -- adding a new one there and to this union
+ * is what makes it selectable, no other changes needed. Defaults to
+ * "buffer" when absent, so existing channels saved before this field
+ * existed keep working unchanged.
+ */
+export type Publisher = 'buffer';
+
 export interface ChannelConfig {
   id: string;
   platform: Platform;
@@ -41,6 +50,7 @@ export interface ChannelConfig {
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
   instagramPostType?: InstagramPostType;
+  publisher?: Publisher;
 }
 
 function assertValidProject(value: unknown, index: number): asserts value is Project {
@@ -86,6 +96,9 @@ function assertValidChannel(projectId: string, value: unknown, index: number): a
   }
   if (c.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(c.instagramPostType)) {
     throw new Error(`${path} (${c.id}): invalid "instagramPostType" "${c.instagramPostType}"`);
+  }
+  if (c.publisher !== undefined && !['buffer'].includes(c.publisher)) {
+    throw new Error(`${path} (${c.id}): invalid "publisher" "${c.publisher}"`);
   }
 }
 

@@ -2,7 +2,7 @@ import { readdir, mkdir, rename, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { loadProjects, loadChannels, saveChannels, isDue, publicRawUrl, inboxRoot, postedRoot } from './config.js';
 import type { ChannelConfig } from './config.js';
-import { publishViaBuffer } from './buffer.js';
+import { getPublisher } from './publishers/index.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
@@ -71,9 +71,11 @@ async function main() {
 
       const caption = await resolveCaption(imagePath, channel);
       const publicImageUrl = publicRawUrl(imagePath);
+      const publisherId = channel.publisher ?? 'buffer';
+      const publish = getPublisher(publisherId);
 
-      console.log(`[${project.id}/${channel.id}] posting ${imagePath} to ${channel.platform} via Buffer`);
-      await publishViaBuffer({ publicImageUrl, caption, channel });
+      console.log(`[${project.id}/${channel.id}] posting ${imagePath} to ${channel.platform} via ${publisherId}`);
+      await publish({ publicImageUrl, caption, channel });
 
       await movePosted(imagePath, project.id, channel.id);
       channel.lastPostedAt = now.toISOString();
