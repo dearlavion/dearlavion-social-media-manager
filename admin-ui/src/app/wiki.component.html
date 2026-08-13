@@ -1,0 +1,94 @@
+<div class="wiki-page">
+  <button type="button" class="btn-secondary back-btn" (click)="back.emit()">← Back to dashboard</button>
+
+  <h1>How to configure a project and add channels</h1>
+  <p class="intro">
+    A <strong>project</strong> is a separate brand/business using this tool — its own Drive folders, its own
+    Buffer channels, its own set of social channels. Everything below happens on this dashboard; nothing needs a
+    terminal.
+  </p>
+
+  <h2>1. Load projects</h2>
+  <p>
+    Fill in the repo <strong>Owner</strong>/<strong>Repo</strong>/<strong>Branch</strong> at the top (already
+    pre-filled by default) and click <strong>Load projects</strong>. This works with no GitHub token, since the
+    repo is public.
+  </p>
+
+  <h2>2. Pick a project, or add a new one</h2>
+  <p>
+    A row of project chips appears. Click one to select it, or click <strong>+ Add project</strong> to create a
+    new one:
+  </p>
+  <ul>
+    <li><strong>Project id</strong> — a short slug, lowercase, no spaces (e.g. <code>another-brand</code>). This becomes its folder name on GitHub.</li>
+    <li><strong>Display name</strong> — whatever you want shown in the UI (e.g. <code>Another Brand</code>).</li>
+  </ul>
+  <p>
+    Creating a project needs a <a href="#token">GitHub token</a> (see below) — it writes a new
+    <code>config/&lt;id&gt;/channels.json</code> to the repo.
+  </p>
+
+  <h2>3. Load its channels</h2>
+  <p>
+    Once a project is selected, a <strong>Load channels.json for …</strong> button appears. Click it to see that
+    project's channel table (empty the first time).
+  </p>
+
+  <h2>4. Add a channel</h2>
+  <p>Click <strong>Add channel</strong>, then fill in each field:</p>
+  <table class="field-table">
+    <thead>
+      <tr><th>Field</th><th>What it is</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Enabled</td><td>Whether the hourly cron should pick this channel up automatically. Leave unchecked while testing — the per-row Post now button ignores this anyway.</td></tr>
+      <tr><td>Id</td><td>A unique name for this channel within the project, e.g. <code>ig-main</code>.</td></tr>
+      <tr><td>Platform</td><td>Label only, for your reference — the real destination is the Buffer channel ID.</td></tr>
+      <tr><td>Interval (h)</td><td>How many hours must pass since the last post before this channel is due again.</td></tr>
+      <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls images from — the long id from the folder's share URL.</td></tr>
+      <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>
+      <tr><td>IG post type</td><td>Instagram only — post, story, or reel. Defaults to post.</td></tr>
+      <tr><td>Caption template</td><td>Default caption text. Drop a <code>&lt;image-filename&gt;.caption.txt</code> file next to an image in Drive to override it for that one post.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>5. Save</h2>
+  <p>
+    Click <strong>Save to GitHub</strong>. This needs a token too. Everything on this page only ever reads or
+    writes what's actually saved on GitHub — edits here aren't used by anything until you save.
+  </p>
+
+  <h2 id="token">Getting a GitHub token</h2>
+  <p>
+    Anything beyond loading (Save, Add project, Post now) needs a fine-grained Personal Access Token:
+  </p>
+  <ol>
+    <li>github.com → your avatar → <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong></li>
+    <li><strong>Generate new token</strong></li>
+    <li>Repository access → Only select repositories → this repo</li>
+    <li>Permissions → <strong>Contents: Read and write</strong> and <strong>Actions: Read and write</strong></li>
+    <li>Generate, copy it, paste it into the GitHub token field on this page (it stays in this browser tab's session storage — never sent anywhere but <code>api.github.com</code>)</li>
+  </ol>
+
+  <h2>6. Test it</h2>
+  <p>
+    Two ways to trigger a post without waiting for the hourly cron, both requiring the token above:
+  </p>
+  <ul>
+    <li><strong>Post now</strong> (per channel row, next to Remove) — forces just that one channel, ignoring its Enabled checkbox and interval entirely. The fastest way to test a single new channel.</li>
+    <li><strong>Post now (all channels in …)</strong> — runs the same sync-then-post flow for every enabled, due channel in the currently selected project only.</li>
+  </ul>
+  <p>
+    Either can take up to a couple of minutes — the status message at the top updates as each step (sync, then
+    post) finishes. If a channel needs an image and none has been synced from Drive yet, it'll say so instead of
+    posting nothing silently.
+  </p>
+
+  <h2>Common gotchas</h2>
+  <ul>
+    <li>The repo must stay <strong>public</strong> — Buffer fetches images from a public GitHub URL, not a binary upload.</li>
+    <li>A 401 on Save/Post now almost always means the token field is empty or missing the Actions permission.</li>
+    <li>A 403 on Save usually means the token's repository access was left on a read-only default when it was created.</li>
+  </ul>
+</div>

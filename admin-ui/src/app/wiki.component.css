@@ -1,0 +1,95 @@
+:host {
+  display: block;
+}
+
+.wiki-page {
+  background: #ffffff;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 10px rgba(58, 46, 46, 0.04);
+  max-width: 860px;
+}
+
+.back-btn {
+  margin-bottom: 1.5rem;
+}
+
+h1 {
+  font-family: var(--font-heading);
+  font-size: 26px;
+  margin: 0 0 0.75rem;
+  color: var(--color-ink);
+}
+
+h2 {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  margin: 2rem 0 0.5rem;
+  color: var(--color-ink);
+}
+
+h2:first-of-type {
+  margin-top: 1.5rem;
+}
+
+.intro {
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+p,
+li {
+  color: var(--color-ink);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+code {
+  background: var(--tint-cream);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+}
+
+ul,
+ol {
+  padding-left: 1.25rem;
+}
+
+li {
+  margin-bottom: 0.35rem;
+}
+
+a {
+  color: var(--color-coral-deep);
+}
+
+.field-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+  font-size: 0.88rem;
+}
+
+.field-table th,
+.field-table td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-line);
+  vertical-align: top;
+}
+
+.field-table th {
+  color: var(--color-ink-soft);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.field-table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}

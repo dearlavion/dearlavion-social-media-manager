@@ -69,7 +69,8 @@
   gap: 4px;
 }
 
-.nav a {
+.nav a,
+.nav-link {
   color: var(--color-ink-soft);
   text-decoration: none;
   padding: 10px 12px;
@@ -82,9 +83,24 @@
   transition: 0.15s;
 }
 
-.nav a:hover {
+.nav-link {
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.nav a:hover,
+.nav-link:hover {
   background: var(--tint-marigold);
   color: var(--color-coral-deep);
+}
+
+.nav-link.active {
+  background: linear-gradient(135deg, var(--color-coral), var(--color-marigold));
+  color: white;
 }
 
 .nav-icon {

@@ -3,19 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project, PLATFORMS, INSTAGRAM_POST_TYPES, newChannel } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
+import { WikiComponent } from './wiki.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, WikiComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
 export class AppComponent implements OnInit {
   readonly platforms = PLATFORMS;
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
+
+  view: 'dashboard' | 'wiki' = 'dashboard';
 
   connection: GithubConnection = {
     owner: 'dearlavion',

@@ -12,6 +12,9 @@
 
     <div class="nav-title">Quick links</div>
     <nav class="nav">
+      <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="view = 'wiki'">
+        <span class="nav-icon">📖</span><span>Wiki</span>
+      </button>
       <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}" target="_blank" rel="noopener">
         <span class="nav-icon">⌘</span><span>Repository</span>
       </a>
@@ -25,6 +28,9 @@
   </aside>
 
   <main class="main">
+    @if (view === 'wiki') {
+      <app-wiki (back)="view = 'dashboard'"></app-wiki>
+    } @else {
     <header class="topbar">
       <div class="greeting">
         <h1>{{ selectedProject ? selectedProject.name : 'Projects' }}</h1>
@@ -217,6 +223,7 @@
           </a>
         </p>
       </section>
+    }
     }
   </main>
 </div>
