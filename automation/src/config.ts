@@ -5,9 +5,24 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const REPO_ROOT = path.resolve(__dirname, '../..');
-export const CONFIG_PATH = path.join(REPO_ROOT, 'config', 'channels.json');
-export const INBOX_ROOT = path.join(REPO_ROOT, 'inbox');
-export const POSTED_ROOT = path.join(REPO_ROOT, 'posted');
+export const PROJECTS_PATH = path.join(REPO_ROOT, 'config', 'projects.json');
+
+export interface Project {
+  id: string;
+  name: string;
+}
+
+export function configPath(projectId: string): string {
+  return path.join(REPO_ROOT, 'config', projectId, 'channels.json');
+}
+
+export function inboxRoot(projectId: string): string {
+  return path.join(REPO_ROOT, 'inbox', projectId);
+}
+
+export function postedRoot(projectId: string): string {
+  return path.join(REPO_ROOT, 'posted', projectId);
+}
 
 /** Informational only — the actual publish target is `bufferChannelId`, which already knows its own platform on Buffer's side. */
 export type Platform = 'instagram' | 'tiktok' | 'facebook';
@@ -28,43 +43,64 @@ export interface ChannelConfig {
   instagramPostType?: InstagramPostType;
 }
 
-function assertValidChannel(value: unknown, index: number): asserts value is ChannelConfig {
-  const c = value as Partial<ChannelConfig>;
-  if (typeof c.id !== 'string' || !c.id) {
-    throw new Error(`config/channels.json[${index}]: "id" must be a non-empty string`);
+function assertValidProject(value: unknown, index: number): asserts value is Project {
+  const p = value as Partial<Project>;
+  if (typeof p.id !== 'string' || !p.id) {
+    throw new Error(`config/projects.json[${index}]: "id" must be a non-empty string`);
   }
-  if (!['instagram', 'tiktok', 'facebook'].includes(c.platform as string)) {
-    throw new Error(`config/channels.json[${index}] (${c.id}): invalid "platform" "${c.platform}"`);
-  }
-  if (typeof c.enabled !== 'boolean') {
-    throw new Error(`config/channels.json[${index}] (${c.id}): "enabled" must be a boolean`);
-  }
-  if (typeof c.intervalHours !== 'number' || c.intervalHours < 1) {
-    throw new Error(`config/channels.json[${index}] (${c.id}): "intervalHours" must be a number >= 1`);
-  }
-  if (typeof c.driveFolderId !== 'string' || !c.driveFolderId) {
-    throw new Error(`config/channels.json[${index}] (${c.id}): "driveFolderId" must be a non-empty string`);
-  }
-  if (c.enabled && (typeof c.bufferChannelId !== 'string' || !c.bufferChannelId)) {
-    throw new Error(`config/channels.json[${index}] (${c.id}): "bufferChannelId" must be a non-empty string when enabled`);
-  }
-  if (c.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(c.instagramPostType)) {
-    throw new Error(`config/channels.json[${index}] (${c.id}): invalid "instagramPostType" "${c.instagramPostType}"`);
+  if (typeof p.name !== 'string' || !p.name) {
+    throw new Error(`config/projects.json[${index}] (${p.id}): "name" must be a non-empty string`);
   }
 }
 
-export async function loadChannels(): Promise<ChannelConfig[]> {
-  const raw = await readFile(CONFIG_PATH, 'utf-8');
+export async function loadProjects(): Promise<Project[]> {
+  const raw = await readFile(PROJECTS_PATH, 'utf-8');
   const parsed = JSON.parse(raw);
   if (!Array.isArray(parsed)) {
-    throw new Error('config/channels.json must contain a JSON array');
+    throw new Error('config/projects.json must contain a JSON array');
   }
-  parsed.forEach((c, i) => assertValidChannel(c, i));
+  parsed.forEach((p, i) => assertValidProject(p, i));
+  return parsed as Project[];
+}
+
+function assertValidChannel(projectId: string, value: unknown, index: number): asserts value is ChannelConfig {
+  const c = value as Partial<ChannelConfig>;
+  const path = `config/${projectId}/channels.json[${index}]`;
+  if (typeof c.id !== 'string' || !c.id) {
+    throw new Error(`${path}: "id" must be a non-empty string`);
+  }
+  if (!['instagram', 'tiktok', 'facebook'].includes(c.platform as string)) {
+    throw new Error(`${path} (${c.id}): invalid "platform" "${c.platform}"`);
+  }
+  if (typeof c.enabled !== 'boolean') {
+    throw new Error(`${path} (${c.id}): "enabled" must be a boolean`);
+  }
+  if (typeof c.intervalHours !== 'number' || c.intervalHours < 1) {
+    throw new Error(`${path} (${c.id}): "intervalHours" must be a number >= 1`);
+  }
+  if (typeof c.driveFolderId !== 'string' || !c.driveFolderId) {
+    throw new Error(`${path} (${c.id}): "driveFolderId" must be a non-empty string`);
+  }
+  if (c.enabled && (typeof c.bufferChannelId !== 'string' || !c.bufferChannelId)) {
+    throw new Error(`${path} (${c.id}): "bufferChannelId" must be a non-empty string when enabled`);
+  }
+  if (c.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(c.instagramPostType)) {
+    throw new Error(`${path} (${c.id}): invalid "instagramPostType" "${c.instagramPostType}"`);
+  }
+}
+
+export async function loadChannels(projectId: string): Promise<ChannelConfig[]> {
+  const raw = await readFile(configPath(projectId), 'utf-8');
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`config/${projectId}/channels.json must contain a JSON array`);
+  }
+  parsed.forEach((c, i) => assertValidChannel(projectId, c, i));
   return parsed as ChannelConfig[];
 }
 
-export async function saveChannels(channels: ChannelConfig[]): Promise<void> {
-  await writeFile(CONFIG_PATH, JSON.stringify(channels, null, 2) + '\n', 'utf-8');
+export async function saveChannels(projectId: string, channels: ChannelConfig[]): Promise<void> {
+  await writeFile(configPath(projectId), JSON.stringify(channels, null, 2) + '\n', 'utf-8');
 }
 
 export function isDue(channel: ChannelConfig, now: Date): boolean {

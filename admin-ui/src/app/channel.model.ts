@@ -1,3 +1,8 @@
+export interface Project {
+  id: string;
+  name: string;
+}
+
 export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
 export const PLATFORMS: Platform[] = ['instagram', 'tiktok', 'facebook'];

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChannelConfig, PLATFORMS, INSTAGRAM_POST_TYPES, newChannel } from './channel.model';
+import { ChannelConfig, Project, PLATFORMS, INSTAGRAM_POST_TYPES, newChannel } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
@@ -23,6 +23,17 @@ export class AppComponent implements OnInit {
     branch: 'main',
     token: '',
   };
+
+  projects: Project[] = [];
+  projectsSha: string | null = null;
+  projectsLoaded = false;
+  loadingProjects = false;
+  savingProject = false;
+  selectedProjectId: string | null = null;
+  showAddProject = false;
+  newProjectId = '';
+  newProjectName = '';
+
   channels: ChannelConfig[] = [];
   sha: string | null = null;
 
@@ -35,11 +46,22 @@ export class AppComponent implements OnInit {
   errorMessage = '';
 
   get busy(): boolean {
-    return this.loading || this.saving || this.postingNow || this.postingChannelId !== null;
+    return (
+      this.loading ||
+      this.saving ||
+      this.postingNow ||
+      this.postingChannelId !== null ||
+      this.loadingProjects ||
+      this.savingProject
+    );
   }
 
   get enabledCount(): number {
     return this.channels.filter((c) => c.enabled).length;
+  }
+
+  get selectedProject(): Project | undefined {
+    return this.projects.find((p) => p.id === this.selectedProjectId);
   }
 
   constructor(private readonly github: GithubService) {}
@@ -63,13 +85,78 @@ export class AppComponent implements OnInit {
     sessionStorage.setItem(CONNECTION_STORAGE_KEY, JSON.stringify(this.connection));
   }
 
+  async loadProjects(): Promise<void> {
+    this.errorMessage = '';
+    this.statusMessage = '';
+    this.loadingProjects = true;
+    try {
+      this.persistConnection();
+      const { projects, sha } = await this.github.loadProjects(this.connection);
+      this.projects = projects;
+      this.projectsSha = sha;
+      this.projectsLoaded = true;
+      // Switching the project list invalidates whatever channels were loaded before.
+      this.selectedProjectId = null;
+      this.loaded = false;
+      this.channels = [];
+      this.sha = null;
+      this.statusMessage = `Loaded ${projects.length} project(s) from ${this.connection.owner}/${this.connection.repo}@${this.connection.branch}.`;
+    } catch (err) {
+      this.errorMessage = err instanceof Error ? err.message : String(err);
+    } finally {
+      this.loadingProjects = false;
+    }
+  }
+
+  selectProject(id: string): void {
+    this.selectedProjectId = id;
+    this.loaded = false;
+    this.channels = [];
+    this.sha = null;
+    this.statusMessage = '';
+    this.errorMessage = '';
+  }
+
+  async addProject(): Promise<void> {
+    const id = this.newProjectId.trim();
+    const name = this.newProjectName.trim();
+    this.errorMessage = '';
+    this.statusMessage = '';
+    if (!id || !name) {
+      this.errorMessage = 'Project id and name are both required.';
+      return;
+    }
+    if (this.projects.some((p) => p.id === id)) {
+      this.errorMessage = `A project with id "${id}" already exists.`;
+      return;
+    }
+    if (this.projectsSha === null) return;
+
+    this.savingProject = true;
+    try {
+      const updated = [...this.projects, { id, name }];
+      this.projectsSha = await this.github.saveProjects(this.connection, updated, this.projectsSha);
+      this.projects = updated;
+      await this.github.createProjectChannelsFile(this.connection, id);
+      this.newProjectId = '';
+      this.newProjectName = '';
+      this.showAddProject = false;
+      this.statusMessage = `Added project "${name}".`;
+      this.selectProject(id);
+    } catch (err) {
+      this.errorMessage = err instanceof Error ? err.message : String(err);
+    } finally {
+      this.savingProject = false;
+    }
+  }
+
   async load(): Promise<void> {
+    if (!this.selectedProjectId) return;
     this.errorMessage = '';
     this.statusMessage = '';
     this.loading = true;
     try {
-      this.persistConnection();
-      const { channels, sha } = await this.github.loadChannels(this.connection);
+      const { channels, sha } = await this.github.loadChannels(this.connection, this.selectedProjectId);
       // Backfill for channels saved before instagramPostType existed, so the
       // dropdown shows the same default ("post") the automation actually uses.
       this.channels = channels.map((c) =>
@@ -77,7 +164,7 @@ export class AppComponent implements OnInit {
       );
       this.sha = sha;
       this.loaded = true;
-      this.statusMessage = `Loaded ${channels.length} channel(s) from ${this.connection.owner}/${this.connection.repo}@${this.connection.branch}.`;
+      this.statusMessage = `Loaded ${channels.length} channel(s) for ${this.selectedProject?.name ?? this.selectedProjectId}.`;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
@@ -86,12 +173,12 @@ export class AppComponent implements OnInit {
   }
 
   async save(): Promise<void> {
-    if (this.sha === null) return;
+    if (this.sha === null || !this.selectedProjectId) return;
     this.errorMessage = '';
     this.statusMessage = '';
     this.saving = true;
     try {
-      this.sha = await this.github.saveChannels(this.connection, this.channels, this.sha);
+      this.sha = await this.github.saveChannels(this.connection, this.selectedProjectId, this.channels, this.sha);
       this.statusMessage = 'Saved to GitHub.';
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
@@ -101,10 +188,12 @@ export class AppComponent implements OnInit {
   }
 
   private async runSyncThenPost(channelId?: string): Promise<void> {
+    if (!this.selectedProjectId) return;
     this.errorMessage = '';
     this.statusMessage = '';
-    const inputs = channelId ? { channel_id: channelId } : undefined;
-    const scope = channelId ? `"${channelId}"` : 'all enabled channels';
+    const inputs: Record<string, string> = { project_id: this.selectedProjectId };
+    if (channelId) inputs['channel_id'] = channelId;
+    const scope = channelId ? `"${channelId}"` : `all enabled channels in "${this.selectedProjectId}"`;
     try {
       this.statusMessage = `Syncing Drive images for ${scope}… (this can take a minute)`;
       const syncRun = await this.github.triggerAndWait(this.connection, 'sync-drive.yml', inputs);

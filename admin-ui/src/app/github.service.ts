@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ChannelConfig } from './channel.model';
+import { ChannelConfig, Project } from './channel.model';
 
 export interface GithubConnection {
   owner: string;
@@ -8,7 +8,11 @@ export interface GithubConnection {
   token: string;
 }
 
-const CONFIG_PATH = 'config/channels.json';
+const PROJECTS_PATH = 'config/projects.json';
+
+function channelsPath(projectId: string): string {
+  return `config/${projectId}/channels.json`;
+}
 
 function utf8ToBase64(text: string): string {
   const bytes = new TextEncoder().encode(text);
@@ -25,8 +29,8 @@ function base64ToUtf8(base64: string): string {
 
 @Injectable({ providedIn: 'root' })
 export class GithubService {
-  private contentsUrl(conn: GithubConnection): string {
-    return `https://api.github.com/repos/${conn.owner}/${conn.repo}/contents/${CONFIG_PATH}?ref=${encodeURIComponent(conn.branch)}`;
+  private contentsUrl(conn: GithubConnection, path: string): string {
+    return `https://api.github.com/repos/${conn.owner}/${conn.repo}/contents/${path}?ref=${encodeURIComponent(conn.branch)}`;
   }
 
   private headers(conn: GithubConnection): HeadersInit {
@@ -38,33 +42,64 @@ export class GithubService {
     return headers;
   }
 
-  async loadChannels(conn: GithubConnection): Promise<{ channels: ChannelConfig[]; sha: string }> {
-    const res = await fetch(this.contentsUrl(conn), { headers: this.headers(conn) });
+  private async getFile<T>(conn: GithubConnection, path: string): Promise<{ data: T; sha: string }> {
+    const res = await fetch(this.contentsUrl(conn, path), { headers: this.headers(conn) });
     if (!res.ok) {
-      throw new Error(`GitHub API error loading ${CONFIG_PATH}: ${res.status} ${await res.text()}`);
+      throw new Error(`GitHub API error loading ${path}: ${res.status} ${await res.text()}`);
     }
     const body = (await res.json()) as { content: string; sha: string };
-    const channels = JSON.parse(base64ToUtf8(body.content)) as ChannelConfig[];
-    return { channels, sha: body.sha };
+    return { data: JSON.parse(base64ToUtf8(body.content)) as T, sha: body.sha };
   }
 
-  async saveChannels(conn: GithubConnection, channels: ChannelConfig[], sha: string): Promise<string> {
-    const content = utf8ToBase64(JSON.stringify(channels, null, 2) + '\n');
-    const res = await fetch(this.contentsUrl(conn), {
+  private async putFile(
+    conn: GithubConnection,
+    path: string,
+    data: unknown,
+    sha: string | null,
+    message: string,
+  ): Promise<string> {
+    const content = utf8ToBase64(JSON.stringify(data, null, 2) + '\n');
+    const res = await fetch(this.contentsUrl(conn, path), {
       method: 'PUT',
       headers: { ...this.headers(conn), 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: 'chore: update social media channel config',
-        content,
-        sha,
-        branch: conn.branch,
-      }),
+      body: JSON.stringify({ message, content, branch: conn.branch, ...(sha ? { sha } : {}) }),
     });
     if (!res.ok) {
-      throw new Error(`GitHub API error saving ${CONFIG_PATH}: ${res.status} ${await res.text()}`);
+      throw new Error(`GitHub API error saving ${path}: ${res.status} ${await res.text()}`);
     }
     const body = (await res.json()) as { content: { sha: string } };
     return body.content.sha;
+  }
+
+  async loadProjects(conn: GithubConnection): Promise<{ projects: Project[]; sha: string }> {
+    const { data, sha } = await this.getFile<Project[]>(conn, PROJECTS_PATH);
+    return { projects: data, sha };
+  }
+
+  async saveProjects(conn: GithubConnection, projects: Project[], sha: string): Promise<string> {
+    return this.putFile(conn, PROJECTS_PATH, projects, sha, 'chore: update projects registry');
+  }
+
+  /** Creates a brand-new project's channels.json (empty array) -- no sha needed since the file doesn't exist yet. */
+  async createProjectChannelsFile(conn: GithubConnection, projectId: string): Promise<void> {
+    await this.putFile(conn, channelsPath(projectId), [], null, `chore: add project ${projectId}`);
+  }
+
+  async loadChannels(
+    conn: GithubConnection,
+    projectId: string,
+  ): Promise<{ channels: ChannelConfig[]; sha: string }> {
+    const { data, sha } = await this.getFile<ChannelConfig[]>(conn, channelsPath(projectId));
+    return { channels: data, sha };
+  }
+
+  async saveChannels(
+    conn: GithubConnection,
+    projectId: string,
+    channels: ChannelConfig[],
+    sha: string,
+  ): Promise<string> {
+    return this.putFile(conn, channelsPath(projectId), channels, sha, 'chore: update social media channel config');
   }
 
   /**

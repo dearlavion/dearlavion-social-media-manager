@@ -1,13 +1,13 @@
 import { readdir, mkdir, rename, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { loadChannels, saveChannels, isDue, publicRawUrl, INBOX_ROOT, POSTED_ROOT } from './config.js';
+import { loadProjects, loadChannels, saveChannels, isDue, publicRawUrl, inboxRoot, postedRoot } from './config.js';
 import type { ChannelConfig } from './config.js';
 import { publishViaBuffer } from './buffer.js';
 
 const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 
-async function nextImage(channelId: string): Promise<string | null> {
-  const dir = path.join(INBOX_ROOT, channelId);
+async function nextImage(projectId: string, channelId: string): Promise<string | null> {
+  const dir = path.join(inboxRoot(projectId), channelId);
   let entries: string[];
   try {
     entries = await readdir(dir);
@@ -28,8 +28,8 @@ async function resolveCaption(imagePath: string, channel: ChannelConfig): Promis
   }
 }
 
-async function movePosted(imagePath: string, channelId: string): Promise<void> {
-  const destDir = path.join(POSTED_ROOT, channelId);
+async function movePosted(imagePath: string, projectId: string, channelId: string): Promise<void> {
+  const destDir = path.join(postedRoot(projectId), channelId);
   await mkdir(destDir, { recursive: true });
   await rename(imagePath, path.join(destDir, path.basename(imagePath)));
 
@@ -42,37 +42,46 @@ async function movePosted(imagePath: string, channelId: string): Promise<void> {
 }
 
 async function main() {
-  const channels = await loadChannels();
   const now = new Date();
-  // Set by the admin UI's per-channel "Post now" button, to post one
-  // specific channel on demand, ignoring its enabled flag and due-check.
+  // Set by the admin UI's "Post now" buttons, to scope a run to one project
+  // (and optionally force one specific channel within it, ignoring its
+  // enabled flag and due-check) instead of the default cron behavior of
+  // looping every project.
+  const forceProjectId = process.env['FORCE_PROJECT_ID'];
   const forceChannelId = process.env['FORCE_CHANNEL_ID'];
 
-  for (const channel of channels) {
-    const forced = forceChannelId === channel.id;
-    if (!channel.enabled && !forced) continue;
-    if (!forced && !isDue(channel, now)) {
-      console.log(`[${channel.id}] not due yet`);
-      continue;
+  for (const project of await loadProjects()) {
+    if (forceProjectId && forceProjectId !== project.id) continue;
+
+    const channels = await loadChannels(project.id);
+
+    for (const channel of channels) {
+      const forced = forceChannelId === channel.id;
+      if (!channel.enabled && !forced) continue;
+      if (!forced && !isDue(channel, now)) {
+        console.log(`[${project.id}/${channel.id}] not due yet`);
+        continue;
+      }
+
+      const imagePath = await nextImage(project.id, channel.id);
+      if (!imagePath) {
+        console.log(`[${project.id}/${channel.id}] due, but inbox is empty`);
+        continue;
+      }
+
+      const caption = await resolveCaption(imagePath, channel);
+      const publicImageUrl = publicRawUrl(imagePath);
+
+      console.log(`[${project.id}/${channel.id}] posting ${imagePath} to ${channel.platform} via Buffer`);
+      await publishViaBuffer({ publicImageUrl, caption, channel });
+
+      await movePosted(imagePath, project.id, channel.id);
+      channel.lastPostedAt = now.toISOString();
     }
 
-    const imagePath = await nextImage(channel.id);
-    if (!imagePath) {
-      console.log(`[${channel.id}] due, but inbox is empty`);
-      continue;
-    }
-
-    const caption = await resolveCaption(imagePath, channel);
-    const publicImageUrl = publicRawUrl(imagePath);
-
-    console.log(`[${channel.id}] posting ${imagePath} to ${channel.platform} via Buffer`);
-    await publishViaBuffer({ publicImageUrl, caption, channel });
-
-    await movePosted(imagePath, channel.id);
-    channel.lastPostedAt = now.toISOString();
+    await saveChannels(project.id, channels);
   }
 
-  await saveChannels(channels);
   console.log('post complete');
 }
 

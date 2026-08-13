@@ -6,8 +6,8 @@
     </div>
     <div class="nav-title">Social Media Manager</div>
     <p class="sidebar-blurb">
-      Edits <code>config/channels.json</code> directly on GitHub. Your token stays in this browser
-      tab's session storage only.
+      Edits <code>config/&lt;project&gt;/channels.json</code> directly on GitHub. Your token stays in this
+      browser tab's session storage only.
     </p>
 
     <div class="nav-title">Quick links</div>
@@ -27,8 +27,14 @@
   <main class="main">
     <header class="topbar">
       <div class="greeting">
-        <h1>Channels</h1>
-        <p>Configure which Drive folders post to which platforms, and how often.</p>
+        <h1>{{ selectedProject ? selectedProject.name : 'Projects' }}</h1>
+        <p>
+          @if (selectedProject) {
+            Configure which Drive folders post to which platforms, and how often.
+          } @else {
+            Load projects, then pick one (or add a new one) to manage its channels.
+          }
+        </p>
       </div>
     </header>
 
@@ -52,10 +58,12 @@
           <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT: contents + actions read/write" />
         </label>
       </div>
-      <button type="button" class="btn-primary" (click)="load()" [disabled]="busy">
-        {{ loading ? 'Loading…' : 'Load channels.json' }}
+      <button type="button" class="btn-primary" (click)="loadProjects()" [disabled]="busy">
+        {{ loadingProjects ? 'Loading…' : 'Load projects' }}
       </button>
-      <p class="hint">Token is only required to Save. Since this repo is public, Load works without one.</p>
+      <p class="hint">
+        Token is only required to Save, Add project, or Post now. Since this repo is public, Load works without one.
+      </p>
     </section>
 
     @if (statusMessage) {
@@ -63,6 +71,50 @@
     }
     @if (errorMessage) {
       <p class="error">{{ errorMessage }}</p>
+    }
+
+    @if (projectsLoaded) {
+      <section class="card">
+        <div class="card-header"><h2>Project</h2></div>
+        <div class="project-list">
+          @for (p of projects; track p.id) {
+            <button
+              type="button"
+              class="project-chip"
+              [class.active]="p.id === selectedProjectId"
+              (click)="selectProject(p.id)"
+              [disabled]="busy"
+            >
+              {{ p.name }}
+            </button>
+          }
+          <button type="button" class="btn-secondary" (click)="showAddProject = !showAddProject" [disabled]="busy">
+            {{ showAddProject ? 'Cancel' : '+ Add project' }}
+          </button>
+        </div>
+
+        @if (showAddProject) {
+          <div class="connection-grid add-project-grid">
+            <label>
+              Project id
+              <input [(ngModel)]="newProjectId" placeholder="e.g. another-brand" />
+            </label>
+            <label>
+              Display name
+              <input [(ngModel)]="newProjectName" placeholder="e.g. Another Brand" />
+            </label>
+          </div>
+          <button type="button" class="btn-primary" (click)="addProject()" [disabled]="busy">
+            {{ savingProject ? 'Creating…' : 'Create project' }}
+          </button>
+        }
+
+        @if (selectedProjectId && !loaded) {
+          <button type="button" class="btn-primary load-channels-btn" (click)="load()" [disabled]="busy">
+            {{ loading ? 'Loading…' : 'Load channels.json for ' + (selectedProject?.name ?? selectedProjectId) }}
+          </button>
+        }
+      </section>
     }
 
     @if (loaded) {
@@ -76,8 +128,8 @@
           <div class="stat-number">{{ enabledCount }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-top"><span>Repository</span><div class="stat-icon">⌘</div></div>
-          <div class="stat-text">{{ connection.owner }}/{{ connection.repo }}</div>
+          <div class="stat-top"><span>Project</span><div class="stat-icon">⌘</div></div>
+          <div class="stat-text">{{ selectedProject?.name ?? selectedProjectId }}</div>
         </div>
         <div class="stat-card">
           <div class="stat-top"><span>Branch</span><div class="stat-icon">⑂</div></div>
@@ -147,17 +199,19 @@
             {{ saving ? 'Saving…' : 'Save to GitHub' }}
           </button>
           <button type="button" class="btn-primary" (click)="postNow()" [disabled]="busy">
-            {{ postingNow ? 'Working…' : 'Post now (all channels)' }}
+            {{ postingNow ? 'Working…' : 'Post now (all channels in ' + (selectedProject?.name ?? selectedProjectId) + ')' }}
           </button>
         </div>
         <p class="hint">
           "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
-          Buffer) — both immediately instead of waiting for their hourly cron. The per-row <strong>Post now</strong>
-          does the same for just that one channel, ignoring its Enabled checkbox and interval — no need to enable a
-          channel just to test it. Either way it reads from what's already saved on GitHub, not unsaved edits in this
-          page — <strong>Save to GitHub first</strong> if you just changed something. Your token needs the
-          <strong>Actions: read and write</strong> permission for these buttons, in addition to Contents. Can take up
-          to a couple minutes; the status message above will update as each step finishes.
+          Buffer) — both immediately instead of waiting for their hourly cron, scoped to
+          <strong>{{ selectedProject?.name ?? selectedProjectId }}</strong> only. The per-row
+          <strong>Post now</strong> does the same for just that one channel, ignoring its Enabled checkbox and
+          interval — no need to enable a channel just to test it. Either way it reads from what's already saved on
+          GitHub, not unsaved edits in this page — <strong>Save to GitHub first</strong> if you just changed
+          something. Your token needs the <strong>Actions: read and write</strong> permission for these buttons, in
+          addition to Contents. Can take up to a couple minutes; the status message above will update as each step
+          finishes.
           <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
             View runs on GitHub →
           </a>

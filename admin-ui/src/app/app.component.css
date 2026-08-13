@@ -150,6 +150,40 @@
   margin-bottom: 1rem;
 }
 
+.add-project-grid {
+  margin-top: 1rem;
+}
+
+.project-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.project-chip {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background: var(--tint-cream);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.project-chip:hover:not(:disabled) {
+  background: var(--tint-marigold);
+}
+
+.project-chip.active {
+  background: linear-gradient(135deg, var(--color-coral), var(--color-marigold));
+  color: white;
+  border-color: transparent;
+}
+
+.load-channels-btn {
+  margin-top: 1rem;
+}
+
 label {
   display: flex;
   flex-direction: column;

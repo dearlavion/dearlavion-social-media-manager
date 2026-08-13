@@ -3,8 +3,12 @@ name: Post due channels
 on:
   workflow_dispatch:
     inputs:
+      project_id:
+        description: 'Force-scope to only this project id'
+        required: false
+        type: string
       channel_id:
-        description: 'Force-post only this channel id, ignoring its enabled flag and due-check'
+        description: 'Within that project, force-post only this channel id, ignoring its enabled flag and due-check'
         required: false
         type: string
   schedule:
@@ -33,6 +37,7 @@ jobs:
         working-directory: automation
         env:
           BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
+          FORCE_PROJECT_ID: ${{ github.event.inputs.project_id }}
           FORCE_CHANNEL_ID: ${{ github.event.inputs.channel_id }}
         run: npm run post
 
@@ -40,4 +45,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: post due channel(s)'
-          file_pattern: 'inbox/** posted/** config/channels.json'
+          file_pattern: 'inbox/** posted/** config/**/channels.json'

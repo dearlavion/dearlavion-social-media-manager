@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { loadChannels, saveChannels, INBOX_ROOT } from './config.js';
+import { loadProjects, loadChannels, saveChannels, inboxRoot } from './config.js';
 import { listNewFiles, downloadFile } from './drive.js';
 
 function sanitize(name: string): string {
@@ -7,33 +7,41 @@ function sanitize(name: string): string {
 }
 
 async function main() {
-  const channels = await loadChannels();
-  // Set by the admin UI's per-channel "Post now" button, to sync/post one
-  // specific channel on demand without needing to flip its enabled flag.
+  // Set by the admin UI's "Post now" buttons, to scope a run to one project
+  // (and optionally force one specific channel within it) instead of the
+  // default cron behavior of looping every project.
+  const forceProjectId = process.env['FORCE_PROJECT_ID'];
   const forceChannelId = process.env['FORCE_CHANNEL_ID'];
 
-  for (const channel of channels) {
-    const forced = forceChannelId === channel.id;
-    if (!channel.enabled && !forced) continue;
+  for (const project of await loadProjects()) {
+    if (forceProjectId && forceProjectId !== project.id) continue;
 
-    const newFiles = await listNewFiles(channel.driveFolderId, channel.syncedDriveFileIds);
-    if (newFiles.length === 0) {
-      console.log(`[${channel.id}] no new files`);
-      continue;
+    const channels = await loadChannels(project.id);
+
+    for (const channel of channels) {
+      const forced = forceChannelId === channel.id;
+      if (!channel.enabled && !forced) continue;
+
+      const newFiles = await listNewFiles(channel.driveFolderId, channel.syncedDriveFileIds);
+      if (newFiles.length === 0) {
+        console.log(`[${project.id}/${channel.id}] no new files`);
+        continue;
+      }
+
+      for (const file of newFiles) {
+        const prefix = new Date(file.createdTime ?? Date.now()).toISOString().replace(/[:.]/g, '-');
+        const destName = `${prefix}-${sanitize(file.name)}`;
+        const destPath = path.join(inboxRoot(project.id), channel.id, destName);
+
+        console.log(`[${project.id}/${channel.id}] downloading "${file.name}" -> ${destPath}`);
+        await downloadFile(file.id, destPath);
+        channel.syncedDriveFileIds.push(file.id);
+      }
     }
 
-    for (const file of newFiles) {
-      const prefix = new Date(file.createdTime ?? Date.now()).toISOString().replace(/[:.]/g, '-');
-      const destName = `${prefix}-${sanitize(file.name)}`;
-      const destPath = path.join(INBOX_ROOT, channel.id, destName);
-
-      console.log(`[${channel.id}] downloading "${file.name}" -> ${destPath}`);
-      await downloadFile(file.id, destPath);
-      channel.syncedDriveFileIds.push(file.id);
-    }
+    await saveChannels(project.id, channels);
   }
 
-  await saveChannels(channels);
   console.log('sync-drive complete');
 }
 
