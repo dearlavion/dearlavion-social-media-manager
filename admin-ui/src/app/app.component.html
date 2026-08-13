@@ -11,6 +11,9 @@
       <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="view = 'dashboard'">
         <span class="nav-icon">▦</span><span>Dashboard</span>
       </button>
+      <button type="button" class="nav-link" [class.active]="view === 'setup'" (click)="view = 'setup'">
+        <span class="nav-icon">⚙</span><span>Set Up</span>
+      </button>
       <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="view = 'wiki'">
         <span class="nav-icon">📖</span><span>Wiki</span>
       </button>
@@ -33,6 +36,99 @@
   <main class="main">
     @if (view === 'wiki') {
       <app-wiki (back)="view = 'dashboard'"></app-wiki>
+    } @else if (view === 'setup') {
+      <header class="topbar">
+        <div class="greeting">
+          <h1>Set Up</h1>
+          <p>Create a new project, or connect a new posting tool.</p>
+        </div>
+      </header>
+
+      <section class="card">
+        <div class="card-header"><h2>Repository connection</h2></div>
+        <div class="connection-grid">
+          <label>
+            Owner
+            <input [(ngModel)]="connection.owner" placeholder="dearlavion" />
+          </label>
+          <label>
+            Repo
+            <input [(ngModel)]="connection.repo" placeholder="dearlavion-social-media-manager" />
+          </label>
+          <label>
+            Branch
+            <input [(ngModel)]="connection.branch" placeholder="main" />
+          </label>
+          <label>
+            GitHub token
+            <input [(ngModel)]="connection.token" type="password" placeholder="fine-grained PAT: contents + actions read/write" />
+          </label>
+        </div>
+        <button type="button" class="btn-primary" (click)="loadProjects()" [disabled]="busy">
+          {{ loadingProjects ? 'Loading…' : 'Load projects' }}
+        </button>
+        <p class="hint">Needed here so a new project can be added to the registry. Requires a token (Contents: read and write).</p>
+      </section>
+
+      @if (statusMessage) {
+        <p class="status">{{ statusMessage }}</p>
+      }
+      @if (errorMessage) {
+        <p class="error">{{ errorMessage }}</p>
+      }
+
+      <section class="card">
+        <div class="card-header"><h2>New project</h2></div>
+        @if (!projectsLoaded) {
+          <p class="hint">Load projects above first.</p>
+        } @else {
+          <div class="connection-grid add-project-grid">
+            <label>
+              Project id
+              <input [(ngModel)]="newProjectId" placeholder="e.g. another-brand" />
+            </label>
+            <label>
+              Display name
+              <input [(ngModel)]="newProjectName" placeholder="e.g. Another Brand" />
+            </label>
+          </div>
+          <button type="button" class="btn-primary" (click)="addProject()" [disabled]="busy">
+            {{ savingProject ? 'Creating…' : 'Create project' }}
+          </button>
+          <p class="hint">
+            Creates <code>config/&lt;id&gt;/channels.json</code> (empty) and registers it in
+            <code>config/projects.json</code>. You'll be switched to the Dashboard with it selected once it's created.
+          </p>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-header"><h2>New posting tool</h2></div>
+        <p class="hint">
+          Posting tools are the backends that actually publish a post (set per channel on the Dashboard as
+          "Posting tool"). Only <strong>Buffer</strong> is implemented today:
+        </p>
+        <ol class="setup-steps">
+          <li>
+            Create a free account at <a href="https://buffer.com" target="_blank" rel="noopener">buffer.com</a> and
+            connect the accounts you want to post to from Buffer's own dashboard.
+          </li>
+          <li>
+            Get a personal API key: <a href="https://publish.buffer.com/settings/api" target="_blank" rel="noopener">buffer.com/settings/api</a>.
+          </li>
+          <li>
+            Add it as a GitHub repo secret named <code>BUFFER_ACCESS_TOKEN</code> (shared across every project).
+          </li>
+          <li>
+            For each channel, look up its Buffer channel id via Buffer's GraphQL API — see the Wiki for the exact query.
+          </li>
+        </ol>
+        <p class="hint">
+          Adding a different tool (a direct platform API, or another free service) means writing one new module in
+          <code>automation/src/publishers/</code> matching the existing <code>PublishFn</code> pattern and
+          registering it — it then appears here and in the Dashboard's Posting tool dropdown automatically.
+        </p>
+      </section>
     } @else {
     <header class="topbar">
       <div class="greeting">
@@ -41,7 +137,7 @@
           @if (selectedProject) {
             Configure which Drive folders post to which platforms, and how often.
           } @else {
-            Load projects, then pick one (or add a new one) to manage its channels.
+            Load projects, then pick one to manage its channels, or head to Set Up to add a new one.
           }
         </p>
       </div>
@@ -71,7 +167,7 @@
         {{ loadingProjects ? 'Loading…' : 'Load projects' }}
       </button>
       <p class="hint">
-        Token is only required to Save, Add project, or Post now. Since this repo is public, Load works without one.
+        Token is only required to Save or Post now. Since this repo is public, Load works without one.
       </p>
     </section>
 
@@ -97,26 +193,7 @@
               {{ p.name }}
             </button>
           }
-          <button type="button" class="btn-secondary" (click)="showAddProject = !showAddProject" [disabled]="busy">
-            {{ showAddProject ? 'Cancel' : '+ Add project' }}
-          </button>
         </div>
-
-        @if (showAddProject) {
-          <div class="connection-grid add-project-grid">
-            <label>
-              Project id
-              <input [(ngModel)]="newProjectId" placeholder="e.g. another-brand" />
-            </label>
-            <label>
-              Display name
-              <input [(ngModel)]="newProjectName" placeholder="e.g. Another Brand" />
-            </label>
-          </div>
-          <button type="button" class="btn-primary" (click)="addProject()" [disabled]="busy">
-            {{ savingProject ? 'Creating…' : 'Create project' }}
-          </button>
-        }
 
         @if (selectedProjectId && !loaded) {
           <button type="button" class="btn-primary load-channels-btn" (click)="load()" [disabled]="busy">

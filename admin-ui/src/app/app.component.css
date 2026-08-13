@@ -406,6 +406,34 @@ button:disabled {
   color: var(--color-coral-deep);
 }
 
+.hint code {
+  background: var(--tint-cream);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+}
+
+.setup-steps {
+  margin: 0.5rem 0 1rem;
+  padding-left: 1.25rem;
+  color: var(--color-ink);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.setup-steps li {
+  margin-bottom: 0.4rem;
+}
+
+.setup-steps code {
+  background: var(--tint-cream);
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+}
+
 .status {
   color: var(--color-leaf);
   font-size: 0.9rem;

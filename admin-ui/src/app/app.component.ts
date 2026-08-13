@@ -19,7 +19,7 @@ export class AppComponent implements OnInit {
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
-  view: 'dashboard' | 'wiki' = 'dashboard';
+  view: 'dashboard' | 'wiki' | 'setup' = 'dashboard';
 
   connection: GithubConnection = {
     owner: 'dearlavion',
@@ -34,7 +34,6 @@ export class AppComponent implements OnInit {
   loadingProjects = false;
   savingProject = false;
   selectedProjectId: string | null = null;
-  showAddProject = false;
   newProjectId = '';
   newProjectName = '';
 
@@ -144,9 +143,9 @@ export class AppComponent implements OnInit {
       await this.github.createProjectChannelsFile(this.connection, id);
       this.newProjectId = '';
       this.newProjectName = '';
-      this.showAddProject = false;
-      this.statusMessage = `Added project "${name}".`;
+      this.statusMessage = `Added project "${name}". Switched to the Dashboard so you can load its channels.`;
       this.selectProject(id);
+      this.view = 'dashboard';
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
