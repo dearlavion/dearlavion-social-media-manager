@@ -32,6 +32,36 @@ export function configPath(projectId: string): string {
   return path.join(REPO_ROOT, 'config', projectId, 'channels.json');
 }
 
+export function campaignsPath(projectId: string): string {
+  return path.join(REPO_ROOT, 'config', projectId, 'campaigns.json');
+}
+
+/**
+ * One planned post within a Campaign's ordered sequence. `linkedPostPath`
+ * is a repo-relative path (e.g. "inbox/travel-besty/ig-main/<postId>") set
+ * by the admin UI when a queued post is assigned to fulfil this slot --
+ * post.ts watches for a match on that path to flip status to "posted".
+ */
+export interface CampaignSlot {
+  id: string;
+  stage: string;
+  guidance: string;
+  channelId: string;
+  status: 'planned' | 'queued' | 'posted';
+  linkedPostPath?: string;
+  postedAt?: string;
+}
+
+export interface Campaign {
+  id: string;
+  name: string;
+  goal: string;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  slots: CampaignSlot[];
+}
+
 export function inboxRoot(projectId: string): string {
   return path.join(REPO_ROOT, 'inbox', projectId);
 }
@@ -169,6 +199,49 @@ export async function saveChannels(projectId: string, channels: ChannelConfig[])
   await writeFile(configPath(projectId), JSON.stringify(channels, null, 2) + '\n', 'utf-8');
 }
 
+function assertValidCampaign(projectId: string, value: unknown, index: number): asserts value is Campaign {
+  const c = value as Partial<Campaign>;
+  const path = `config/${projectId}/campaigns.json[${index}]`;
+  if (typeof c.id !== 'string' || !c.id) {
+    throw new Error(`${path}: "id" must be a non-empty string`);
+  }
+  if (typeof c.name !== 'string' || !c.name) {
+    throw new Error(`${path} (${c.id}): "name" must be a non-empty string`);
+  }
+  if (!Array.isArray(c.slots)) {
+    throw new Error(`${path} (${c.id}): "slots" must be an array`);
+  }
+  c.slots.forEach((s, i) => {
+    if (typeof s.id !== 'string' || !s.id) {
+      throw new Error(`${path} (${c.id}).slots[${i}]: "id" must be a non-empty string`);
+    }
+    if (!['planned', 'queued', 'posted'].includes(s.status)) {
+      throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): invalid "status" "${s.status}"`);
+    }
+  });
+}
+
+/** Most projects won't have a campaigns.json at all -- absent file means no campaigns, not an error. */
+export async function loadCampaigns(projectId: string): Promise<Campaign[]> {
+  let raw: string;
+  try {
+    raw = await readFile(campaignsPath(projectId), 'utf-8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw err;
+  }
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`config/${projectId}/campaigns.json must contain a JSON array`);
+  }
+  parsed.forEach((c, i) => assertValidCampaign(projectId, c, i));
+  return parsed as Campaign[];
+}
+
+export async function saveCampaigns(projectId: string, campaigns: Campaign[]): Promise<void> {
+  await writeFile(campaignsPath(projectId), JSON.stringify(campaigns, null, 2) + '\n', 'utf-8');
+}
+
 export function isDue(channel: ChannelConfig, now: Date): boolean {
   if (!channel.lastPostedAt) return true;
   const elapsedHours = (now.getTime() - new Date(channel.lastPostedAt).getTime()) / (1000 * 60 * 60);
@@ -182,12 +255,16 @@ export const DRY_RUN = process.env['DRY_RUN'] === 'true';
  * this repo. Buffer's createPost only accepts a publicly-fetchable image
  * URL, not a binary upload, so this only works if the repo is public.
  */
+/** Repo-relative, forward-slash path -- the same shape used for a Campaign slot's `linkedPostPath`. */
+export function repoRelativePath(absPath: string): string {
+  return path.relative(REPO_ROOT, absPath).split(path.sep).join('/');
+}
+
 export function publicRawUrl(absPath: string): string {
   const repo = process.env['GITHUB_REPOSITORY']; // e.g. "dearlavion/dearlavion-social-media-manager", set by GH Actions
   const ref = process.env['GITHUB_REF_NAME'] ?? 'main';
   if (!repo) {
     throw new Error('GITHUB_REPOSITORY env var is not set (expected to run inside GitHub Actions)');
   }
-  const relPath = path.relative(REPO_ROOT, absPath).split(path.sep).join('/');
-  return `https://raw.githubusercontent.com/${repo}/${ref}/${relPath}`;
+  return `https://raw.githubusercontent.com/${repo}/${ref}/${repoRelativePath(absPath)}`;
 }

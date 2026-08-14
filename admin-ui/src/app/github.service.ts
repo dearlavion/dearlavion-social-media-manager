@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ChannelConfig, Project } from './channel.model';
 import { Reminder } from './reminder.model';
+import { Campaign } from './campaign.model';
 
 export interface GithubConnection {
   owner: string;
@@ -20,6 +21,10 @@ const REMINDERS_PATH = 'config/reminders.json';
 
 function channelsPath(projectId: string): string {
   return `config/${projectId}/channels.json`;
+}
+
+function campaignsPath(projectId: string): string {
+  return `config/${projectId}/campaigns.json`;
 }
 
 function utf8ToBase64(text: string): string {
@@ -117,6 +122,21 @@ export class GithubService {
 
   async saveReminders(conn: GithubConnection, reminders: Reminder[], sha: string | null): Promise<string> {
     return this.putFile(conn, REMINDERS_PATH, reminders, sha, 'chore: update reminders');
+  }
+
+  /** Falls back to an empty list if config/<projectId>/campaigns.json doesn't exist yet -- most projects won't have one. */
+  async loadCampaigns(conn: GithubConnection, projectId: string): Promise<{ campaigns: Campaign[]; sha: string | null }> {
+    const { data, sha } = await this.getFileOrDefault<Campaign[]>(conn, campaignsPath(projectId), []);
+    return { campaigns: data, sha };
+  }
+
+  async saveCampaigns(
+    conn: GithubConnection,
+    projectId: string,
+    campaigns: Campaign[],
+    sha: string | null,
+  ): Promise<string> {
+    return this.putFile(conn, campaignsPath(projectId), campaigns, sha, 'chore: update campaigns');
   }
 
   async loadChannels(

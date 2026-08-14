@@ -1,7 +1,18 @@
 import { readdir, mkdir, rename, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
-import { loadProjects, loadChannels, saveChannels, isDue, publicRawUrl, inboxRoot, postedRoot } from './config.js';
-import type { ChannelConfig } from './config.js';
+import {
+  loadProjects,
+  loadChannels,
+  saveChannels,
+  loadCampaigns,
+  saveCampaigns,
+  isDue,
+  publicRawUrl,
+  repoRelativePath,
+  inboxRoot,
+  postedRoot,
+} from './config.js';
+import type { ChannelConfig, Campaign } from './config.js';
 import { getPublisher } from './publishers/index.js';
 import type { PostMedia } from './publishers/types.js';
 
@@ -58,6 +69,27 @@ async function movePosted(postDir: string, projectId: string, channelId: string)
   await rename(postDir, path.join(destParent, path.basename(postDir)));
 }
 
+/**
+ * If a Campaign slot was linked (by the admin UI) to the post folder that
+ * just published, flips it to "posted". Mutates `campaigns` in place and
+ * returns whether anything changed, so the caller only writes
+ * campaigns.json back when there was actually a match.
+ */
+function markLinkedCampaignSlotPosted(campaigns: Campaign[], linkedPostPath: string, now: Date): boolean {
+  let changed = false;
+  for (const campaign of campaigns) {
+    for (const slot of campaign.slots) {
+      if (slot.linkedPostPath === linkedPostPath && slot.status !== 'posted') {
+        slot.status = 'posted';
+        slot.postedAt = now.toISOString();
+        changed = true;
+        console.log(`  -> linked campaign slot "${slot.id}" in campaign "${campaign.name}" marked posted`);
+      }
+    }
+  }
+  return changed;
+}
+
 async function main() {
   const now = new Date();
   // Set by the admin UI's "Post now" buttons, to scope a run to one project
@@ -71,6 +103,8 @@ async function main() {
     if (forceProjectId && forceProjectId !== project.id) continue;
 
     const channels = await loadChannels(project.id);
+    const campaigns = await loadCampaigns(project.id);
+    let campaignsDirty = false;
 
     for (const channel of channels) {
       const forced = forceChannelId === channel.id;
@@ -114,11 +148,19 @@ async function main() {
       );
       await publish({ media, caption, channel });
 
+      const linkedPostPath = repoRelativePath(postDir);
       await movePosted(postDir, project.id, channel.id);
       channel.lastPostedAt = now.toISOString();
+
+      if (markLinkedCampaignSlotPosted(campaigns, linkedPostPath, now)) {
+        campaignsDirty = true;
+      }
     }
 
     await saveChannels(project.id, channels);
+    if (campaignsDirty) {
+      await saveCampaigns(project.id, campaigns);
+    }
   }
 
   console.log('post complete');

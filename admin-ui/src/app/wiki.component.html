@@ -132,6 +132,50 @@
     folder, to stay well under GitHub's 60/hr rate limit for unauthenticated requests.
   </p>
 
+  <h1>Using Campaigns</h1>
+  <p class="intro">
+    <strong>Campaigns</strong> (left menu) plans a push as an ordered sequence of posts and tracks where each one
+    really is — so you have a "what to do next" answer instead of guessing.
+  </p>
+
+  <h2>1. Build a campaign</h2>
+  <ol>
+    <li>Load a project's channels on the Dashboard first (Campaigns reuses that same selection).</li>
+    <li>Switch to <strong>Campaigns</strong>, <strong>Load campaigns</strong>, then <strong>New Campaign</strong>.</li>
+    <li><strong>Step 1</strong> — name and goal (start/end dates are optional, informational only).</li>
+    <li><strong>Step 2</strong> — pick which channel(s) this campaign runs on.</li>
+    <li>
+      <strong>Step 3</strong> — add slots in order: pick a stage (quick-pick <code>awareness</code> /
+      <code>consideration</code> / <code>conversion</code> / <code>loyalty</code> for sensible default guidance, or
+      type your own), edit the guidance text, pick a channel, click <strong>Add slot</strong>. Reorder with the
+      ↑/↓ buttons before moving on.
+    </li>
+    <li><strong>Step 4</strong> — review the ordered list, then <strong>Create campaign</strong> (needs a token, same as Save elsewhere).</li>
+  </ol>
+
+  <h2>2. Track it</h2>
+  <p>
+    A campaign's detail view always shows a <strong>"What to do next"</strong> callout — the first slot that isn't
+    posted yet, with its stage and guidance. Once matching media is synced from Drive, click <strong>Load queued
+    posts</strong> to see what's currently sitting in <code>inbox/</code> for that slot's channel (the same data the
+    Content Queue view shows), then <strong>Link</strong> the right one — the slot flips to <code>queued</code>.
+  </p>
+  <p>
+    From there it's automatic: when <code>post.yml</code> actually publishes that linked post, <code>post.ts</code>
+    flips the slot to <code>posted</code> and records when, without any manual bookkeeping.
+  </p>
+  <p>
+    Campaigns are a planning/tracking layer only — they don't gate or reorder what actually posts. Each channel's
+    own <strong>Enabled</strong>/<strong>Interval (h)</strong> settings still decide that, same as always.
+  </p>
+
+  <h2>Common gotcha</h2>
+  <p>
+    If a linked post gets deleted or moved out of <code>inbox/</code> by hand instead of through the normal sync →
+    post flow, its slot stays stuck on <code>queued</code> forever — nothing currently detects a broken link.
+    <strong>Unlink</strong> it manually if that happens.
+  </p>
+
   <h1>Using the Scheduler (reminders)</h1>
   <p class="intro">
     <strong>Scheduler</strong> (left menu) is a personal reminder calendar, unrelated to any project. It doesn't

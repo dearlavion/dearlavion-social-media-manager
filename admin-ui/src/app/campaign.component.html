@@ -1,0 +1,251 @@
+<div class="campaign-page">
+  <header class="topbar">
+    <div class="greeting">
+      <h1>Campaigns</h1>
+      <p>Plan a marketing campaign as an ordered sequence of posts, then track where each one actually is.</p>
+    </div>
+  </header>
+
+  @if (!project) {
+    <section class="card">
+      <p class="hint">Select a project on the Dashboard first, then come back here.</p>
+    </section>
+  } @else if (!channelsLoaded) {
+    <section class="card">
+      <p class="hint">Load "{{ project.name }}"'s channels on the Dashboard first, then come back here.</p>
+    </section>
+  } @else {
+    @if (statusMessage) {
+      <p class="status">{{ statusMessage }}</p>
+    }
+    @if (errorMessage) {
+      <p class="error">{{ errorMessage }}</p>
+    }
+
+    <!-- LIST -->
+    @if (mode === 'list') {
+      <section class="card">
+        <div class="card-header"><h2>{{ project.name }}</h2></div>
+        @if (!loaded) {
+          <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
+            {{ loading ? 'Loading…' : 'Load campaigns' }}
+          </button>
+        } @else {
+          <div class="campaign-list-actions">
+            <button type="button" class="btn-secondary" (click)="load()" [disabled]="loading">
+              {{ loading ? 'Loading…' : 'Refresh' }}
+            </button>
+            <button type="button" class="btn-primary" (click)="openBuilder()">New Campaign</button>
+          </div>
+        }
+      </section>
+
+      @if (loaded) {
+        @if (campaigns.length === 0) {
+          <section class="card">
+            <p class="hint">No campaigns yet for {{ project.name }}. Click "New Campaign" to build one.</p>
+          </section>
+        } @else {
+          <div class="campaign-cards">
+            @for (campaign of campaigns; track campaign.id) {
+              <button type="button" class="campaign-card" (click)="openDetail(campaign.id)">
+                <div class="campaign-card-name">{{ campaign.name }}</div>
+                <div class="campaign-card-goal">{{ campaign.goal || 'No goal set' }}</div>
+                <div class="campaign-card-progress">{{ progressLabel(campaign) }}</div>
+              </button>
+            }
+          </div>
+        }
+      }
+    }
+
+    <!-- BUILDER -->
+    @if (mode === 'builder') {
+      <section class="card">
+        <div class="card-header"><h2>New campaign — step {{ step }} of 4</h2></div>
+
+        @if (step === 1) {
+          <div class="form-grid">
+            <label>
+              Name
+              <input [(ngModel)]="draftName" placeholder="e.g. BKK Launch Week" />
+            </label>
+            <label>
+              Goal
+              <input [(ngModel)]="draftGoal" placeholder="e.g. Grow Instagram awareness before the BKK trip" />
+            </label>
+            <label>
+              Start date (optional)
+              <input type="date" [(ngModel)]="draftStartDate" />
+            </label>
+            <label>
+              End date (optional)
+              <input type="date" [(ngModel)]="draftEndDate" />
+            </label>
+          </div>
+          <button type="button" class="btn-primary" (click)="goToStep(2)" [disabled]="!draftName.trim()">Next</button>
+        }
+
+        @if (step === 2) {
+          <p class="hint">Which channels will this campaign post to?</p>
+          <div class="chip-row">
+            @for (channel of channels; track channel.id) {
+              <button
+                type="button"
+                class="chip"
+                [class.active]="draftChannelIds.includes(channel.id)"
+                (click)="toggleDraftChannel(channel.id)"
+              >
+                {{ channel.id }}
+              </button>
+            }
+          </div>
+          <div class="wizard-actions">
+            <button type="button" class="btn-secondary" (click)="goToStep(1)">Back</button>
+            <button type="button" class="btn-primary" (click)="goToStep(3)" [disabled]="draftChannelIds.length === 0">
+              Next
+            </button>
+          </div>
+        }
+
+        @if (step === 3) {
+          <p class="hint">Build the ordered sequence of posts. Pick a stage (or type your own), edit the guidance, pick a channel, then Add.</p>
+
+          <div class="chip-row">
+            @for (s of defaultStages; track s.stage) {
+              <button type="button" class="chip" (click)="pickStage(s.stage, s.guidance)">{{ s.stage }}</button>
+            }
+          </div>
+
+          <div class="form-grid add-slot-grid">
+            <label>
+              Stage
+              <input [(ngModel)]="newSlotStage" placeholder="e.g. awareness" />
+            </label>
+            <label>
+              Channel
+              <select [(ngModel)]="newSlotChannelId">
+                @for (id of draftChannelIds; track id) {
+                  <option [value]="id">{{ id }}</option>
+                }
+              </select>
+            </label>
+          </div>
+          <label class="guidance-label">
+            Guidance — what to do for this post
+            <textarea [(ngModel)]="newSlotGuidance" rows="2" placeholder="What should this post actually be?"></textarea>
+          </label>
+          <button type="button" class="btn-secondary" (click)="addDraftSlot()" [disabled]="!newSlotStage.trim()">
+            Add slot
+          </button>
+
+          @if (draftSlots.length > 0) {
+            <ol class="slot-list">
+              @for (slot of draftSlots; track slot.id; let i = $index) {
+                <li class="slot-row">
+                  <span class="stage-badge">{{ slot.stage }}</span>
+                  <span class="slot-channel">{{ slot.channelId }}</span>
+                  <span class="slot-guidance">{{ slot.guidance || '(no guidance)' }}</span>
+                  <span class="slot-move">
+                    <button type="button" class="btn-ghost" (click)="moveDraftSlot(i, -1)" [disabled]="i === 0">↑</button>
+                    <button type="button" class="btn-ghost" (click)="moveDraftSlot(i, 1)" [disabled]="i === draftSlots.length - 1">↓</button>
+                    <button type="button" class="btn-danger" (click)="removeDraftSlot(i)">Remove</button>
+                  </span>
+                </li>
+              }
+            </ol>
+          }
+
+          <div class="wizard-actions">
+            <button type="button" class="btn-secondary" (click)="goToStep(2)">Back</button>
+            <button type="button" class="btn-primary" (click)="goToStep(4)" [disabled]="draftSlots.length === 0">
+              Review
+            </button>
+          </div>
+        }
+
+        @if (step === 4) {
+          <p class="hint"><strong>{{ draftName }}</strong> — {{ draftGoal || 'no goal set' }}</p>
+          <ol class="slot-list">
+            @for (slot of draftSlots; track slot.id) {
+              <li class="slot-row">
+                <span class="stage-badge">{{ slot.stage }}</span>
+                <span class="slot-channel">{{ slot.channelId }}</span>
+                <span class="slot-guidance">{{ slot.guidance || '(no guidance)' }}</span>
+              </li>
+            }
+          </ol>
+          <div class="wizard-actions">
+            <button type="button" class="btn-secondary" (click)="goToStep(3)">Back</button>
+            <button type="button" class="btn-primary" (click)="createCampaign()" [disabled]="saving">
+              {{ saving ? 'Creating…' : 'Create campaign' }}
+            </button>
+          </div>
+        }
+      </section>
+      <button type="button" class="btn-ghost cancel-btn" (click)="openList()">Cancel</button>
+    }
+
+    <!-- DETAIL -->
+    @if (mode === 'detail' && selectedCampaign) {
+      <button type="button" class="btn-ghost back-btn" (click)="openList()">← All campaigns</button>
+
+      <section class="card">
+        <div class="card-header"><h2>{{ selectedCampaign.name }}</h2></div>
+        <p class="hint">{{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}</p>
+      </section>
+
+      @if (nextOpenSlot(selectedCampaign); as next) {
+        <section class="card next-card">
+          <div class="card-header"><h2>What to do next</h2></div>
+          <span class="stage-badge">{{ next.stage }}</span>
+          <span class="slot-channel">{{ next.channelId }}</span>
+          <p class="next-guidance">{{ next.guidance || '(no guidance set for this slot)' }}</p>
+
+          @if (next.status === 'planned') {
+            @if (!inboxLoaded) {
+              <button type="button" class="btn-secondary" (click)="loadInbox()" [disabled]="loadingInbox">
+                {{ loadingInbox ? 'Loading…' : 'Load queued posts' }}
+              </button>
+            } @else if (linkableInboxPosts(next).length === 0) {
+              <p class="hint">Nothing queued for "{{ next.channelId }}" yet — sync Drive, then
+                <button type="button" class="btn-ghost" (click)="loadInbox()">refresh</button>.
+              </p>
+            } @else {
+              <div class="link-picker">
+                @for (post of linkableInboxPosts(next); track post.path) {
+                  <button type="button" class="btn-secondary" (click)="linkPost(next, post)">
+                    Link "{{ post.name }}" ({{ post.mediaType }})
+                  </button>
+                }
+              </div>
+            }
+          } @else if (next.status === 'queued') {
+            <p class="hint">Linked to <code>{{ next.linkedPostPath }}</code> — will flip to posted automatically once it actually publishes.</p>
+            <button type="button" class="btn-ghost" (click)="unlinkSlot(next)">Unlink</button>
+          }
+        </section>
+      } @else {
+        <section class="card">
+          <p class="hint">Every slot in this campaign has been posted 🎉</p>
+        </section>
+      }
+
+      <section class="card">
+        <div class="card-header"><h2>All slots</h2></div>
+        <ol class="slot-list">
+          @for (slot of selectedCampaign.slots; track slot.id) {
+            <li class="slot-row">
+              <span class="stage-badge">{{ slot.stage }}</span>
+              <span class="slot-channel">{{ slot.channelId }}</span>
+              <span class="slot-guidance">{{ slot.guidance || '(no guidance)' }}</span>
+              <span class="status-badge" [class.queued]="slot.status === 'queued'" [class.posted]="slot.status === 'posted'">
+                {{ slot.status }}
+              </span>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  }
+</div>

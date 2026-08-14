@@ -1,28 +1,11 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChannelConfig, Project } from './channel.model';
-import { GithubConnection, GithubService, TreeEntry } from './github.service';
+import { GithubConnection, GithubService } from './github.service';
+import { InboxPost, parseInboxTree } from './inbox-tree.util';
 
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.webm']);
-const CAPTION_FILENAME = 'caption.txt';
-
-interface QueuedPostFile {
-  filename: string;
-  path: string;
-  isVideo: boolean;
-}
-
-interface QueuedPost {
-  name: string;
-  files: QueuedPostFile[];
-  mediaType: 'image' | 'video' | 'carousel';
-  hasCustomCaption: boolean;
+interface QueuedPost extends InboxPost {
   estimatedAt: Date;
-}
-
-function extname(filename: string): string {
-  const i = filename.lastIndexOf('.');
-  return i >= 0 ? filename.slice(i).toLowerCase() : '';
 }
 
 @Component({
@@ -59,7 +42,7 @@ export class QueueComponent {
     this.loading = true;
     try {
       const tree = await this.github.loadTree(this.connection);
-      this.queuesByChannel = this.buildQueues(tree, this.project.id);
+      this.queuesByChannel = this.buildQueues(parseInboxTree(tree, this.project.id));
       this.loaded = true;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
@@ -68,52 +51,27 @@ export class QueueComponent {
     }
   }
 
-  private buildQueues(tree: TreeEntry[], projectId: string): Map<string, QueuedPost[]> {
-    const prefix = `inbox/${projectId}/`;
-    // channelId -> postName -> files
-    const byChannel = new Map<string, Map<string, QueuedPostFile[]>>();
-    const captionedPosts = new Set<string>(); // "channelId/postName"
-
-    for (const entry of tree) {
-      if (entry.type !== 'blob' || !entry.path.startsWith(prefix)) continue;
-      const parts = entry.path.slice(prefix.length).split('/');
-      if (parts.length !== 3) continue; // expect <channelId>/<postName>/<filename>
-      const [channelId, postName, filename] = parts;
-
-      if (filename === CAPTION_FILENAME) {
-        captionedPosts.add(`${channelId}/${postName}`);
-        continue;
-      }
-
-      if (!byChannel.has(channelId)) byChannel.set(channelId, new Map());
-      const posts = byChannel.get(channelId)!;
-      if (!posts.has(postName)) posts.set(postName, []);
-      posts.get(postName)!.push({ filename, path: entry.path, isVideo: VIDEO_EXTENSIONS.has(extname(filename)) });
+  private buildQueues(posts: InboxPost[]): Map<string, QueuedPost[]> {
+    const byChannel = new Map<string, InboxPost[]>();
+    for (const post of posts) {
+      if (!byChannel.has(post.channelId)) byChannel.set(post.channelId, []);
+      byChannel.get(post.channelId)!.push(post);
     }
 
     const result = new Map<string, QueuedPost[]>();
-    for (const [channelId, posts] of byChannel) {
+    for (const [channelId, channelPosts] of byChannel) {
       const channel = this.channels.find((c) => c.id === channelId);
       const intervalHours = channel?.intervalHours ?? 24;
       let cursor = this.firstEstimate(channel);
 
-      const queued = [...posts.keys()]
-        .sort()
-        .map((postName): QueuedPost => {
-          const files = posts.get(postName)!.slice().sort((a, b) => a.filename.localeCompare(b.filename));
-          const mediaType: QueuedPost['mediaType'] =
-            files.length > 1 ? 'carousel' : files[0]?.isVideo ? 'video' : 'image';
+      result.set(
+        channelId,
+        channelPosts.map((post) => {
           const estimatedAt = new Date(cursor);
           cursor += intervalHours * 60 * 60 * 1000;
-          return {
-            name: postName,
-            files,
-            mediaType,
-            hasCustomCaption: captionedPosts.has(`${channelId}/${postName}`),
-            estimatedAt,
-          };
-        });
-      result.set(channelId, queued);
+          return { ...post, estimatedAt };
+        }),
+      );
     }
     return result;
   }

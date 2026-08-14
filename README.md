@@ -11,7 +11,7 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
 2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new top-level entries in its configured Google Drive folder. A loose image/video file becomes one post; a **subfolder** becomes a carousel post from everything inside it (up to Instagram's 10-item cap). Each becomes its own post folder — `inbox/<projectId>/<channelId>/<postId>/<file(s)>` — committed into the repo. Any single file over ~90MB is skipped (logged clearly) to stay under GitHub's 100MB push limit.
 3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
-4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts.
+4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
 
 ### Why Buffer instead of each platform's API directly
 
@@ -74,6 +74,18 @@ Workflows run on their cron schedule automatically — across every project in `
 
 **Content Queue** (admin UI, left menu) shows what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first, per channel — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit. Requires a project's channels to already be loaded on the Dashboard.
 
+## Campaigns
+
+**Campaigns** (admin UI, left menu) plans a marketing push as an ordered sequence of post "slots" — each tagged with a funnel stage (awareness/consideration/conversion/loyalty, or a custom label), a channel, and guidance text on what that post should actually be — then tracks where each one really is, so campaign execution doesn't depend on memory.
+
+- **Build one**: name + goal, pick which channel(s) it runs on, then add slots in order (quick-pick a stage for sensible default guidance, or write your own). Reorder with the ↑/↓ buttons. Saved to `config/<projectId>/campaigns.json`.
+- **Track it**: the campaign's detail view always surfaces a **"What to do next"** callout — the first slot that isn't posted yet, with its guidance. Once something matching that slot is synced from Drive, link it from the Content Queue's list of currently-queued posts (fetched the same way Content Queue does, via one Git Trees API call) — the slot flips to `queued`.
+- **Auto-completion**: when `post.yml` actually publishes a post whose folder is linked to a slot, `post.ts` flips that slot to `posted` and records the timestamp automatically — no manual bookkeeping once a post is linked.
+
+This is a planning/tracking layer on top of the existing due-check engine, not a scheduler replacement — campaigns don't gate or reorder what actually posts; `intervalHours`/`enabled` on each channel still decide that.
+
+**Known limitation:** if a linked post is deleted or moved out of `inbox/` by hand instead of through the normal sync → post flow, its slot stays stuck on `queued` — nothing currently detects and clears a broken link.
+
 ## Scheduler (personal reminders)
 
 **Scheduler** (admin UI, left menu) is a calendar for personal reminders, unrelated to any project — click a day, add a time and a message, **Save to GitHub**. `.github/workflows/reminders.yml` runs hourly; for any reminder whose date/time has passed and hasn't fired yet, it logs the message, marks it notified, commits `config/reminders.json`, and **deliberately fails the run** so GitHub's own built-in "workflow run failed" email notification fires — no external email service, no new secret.
@@ -104,6 +116,7 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 automation/                   Node/TS scripts the workflows run (config, drive sync, publishers/, reminders.ts)
 config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
+config/<projectId>/campaigns.json  that project's campaigns -- [{id, name, goal, slots: [{stage, channelId, status, linkedPostPath, ...}]}] (absent if none created yet)
 config/reminders.json         personal reminders for the Scheduler -- [{id, date, time, dueAt, message, notifiedAt}]
 brand/<projectId>/voice.md    that project's brand voice/content guide
 inbox/<projectId>/<channelId>/<postId>/    media synced from Drive, one folder per post (1 file = single/video, 2+ = carousel), waiting to be posted

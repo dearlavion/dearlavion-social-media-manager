@@ -11,6 +11,9 @@
       <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="view = 'dashboard'">
         <span class="nav-icon">▦</span><span>Dashboard</span>
       </button>
+      <button type="button" class="nav-link" [class.active]="view === 'campaigns'" (click)="view = 'campaigns'">
+        <span class="nav-icon">🎯</span><span>Campaigns</span>
+      </button>
       <button type="button" class="nav-link" [class.active]="view === 'queue'" (click)="view = 'queue'">
         <span class="nav-icon">🗂</span><span>Content Queue</span>
       </button>
@@ -51,6 +54,13 @@
         [channels]="channels"
         [channelsLoaded]="loaded"
       ></app-queue>
+    } @else if (view === 'campaigns') {
+      <app-campaign
+        [connection]="connection"
+        [project]="selectedProject ?? null"
+        [channels]="channels"
+        [channelsLoaded]="loaded"
+      ></app-campaign>
     } @else if (view === 'setup') {
       <header class="topbar">
         <div class="greeting">

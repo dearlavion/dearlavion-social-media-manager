@@ -6,13 +6,14 @@ import { GithubConnection, GithubService } from './github.service';
 import { WikiComponent } from './wiki.component';
 import { SchedulerComponent } from './scheduler.component';
 import { QueueComponent } from './queue.component';
+import { CampaignComponent } from './campaign.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent, QueueComponent],
+  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent, QueueComponent, CampaignComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
@@ -21,7 +22,7 @@ export class AppComponent implements OnInit {
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
-  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' = 'dashboard';
+  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' | 'campaigns' = 'dashboard';
 
   connection: GithubConnection = {
     owner: 'dearlavion',
