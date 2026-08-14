@@ -1,0 +1,73 @@
+<div class="queue-page">
+  <header class="topbar">
+    <div class="greeting">
+      <h1>Content Queue</h1>
+      <p>What's waiting in <code>inbox/</code> for each channel, oldest first. Next-post times are estimates -- Post now and manual runs can shift them.</p>
+    </div>
+  </header>
+
+  @if (!project) {
+    <section class="card">
+      <p class="hint">Select a project on the Dashboard first, then come back here.</p>
+    </section>
+  } @else if (!channelsLoaded) {
+    <section class="card">
+      <p class="hint">Load "{{ project.name }}"'s channels on the Dashboard first, then come back here.</p>
+    </section>
+  } @else {
+    <section class="card">
+      <div class="card-header"><h2>{{ project.name }}</h2></div>
+      <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading…' : (loaded ? 'Refresh queue' : 'Load queue') }}
+      </button>
+      <p class="hint">Fetches the whole repo tree in one call, then reads what's under <code>inbox/{{ project.id }}/</code>.</p>
+    </section>
+
+    @if (errorMessage) {
+      <p class="error">{{ errorMessage }}</p>
+    }
+
+    @if (loaded) {
+      @for (channel of channels; track channel.id) {
+        <section class="card">
+          <div class="card-header"><h2>{{ channel.id }} <span class="muted">({{ channel.platform }})</span></h2></div>
+          @if (queueFor(channel.id).length === 0) {
+            <p class="hint">Queue is empty.</p>
+          } @else {
+            <div class="queue-list">
+              @for (post of queueFor(channel.id); track post.name) {
+                <div class="queue-item">
+                  <div class="thumbs">
+                    @for (file of post.files.slice(0, 4); track file.path) {
+                      @if (file.isVideo) {
+                        <div class="thumb video-thumb">🎬</div>
+                      } @else {
+                        <img class="thumb" [src]="rawUrl(file.path)" [alt]="file.filename" loading="lazy" />
+                      }
+                    }
+                    @if (post.files.length > 4) {
+                      <div class="thumb more-thumb">+{{ post.files.length - 4 }}</div>
+                    }
+                  </div>
+                  <div class="queue-item-body">
+                    <span
+                      class="media-badge"
+                      [class.carousel]="post.mediaType === 'carousel'"
+                      [class.video]="post.mediaType === 'video'"
+                    >
+                      {{ post.mediaType === 'carousel' ? 'Carousel ×' + post.files.length : post.mediaType }}
+                    </span>
+                    <span class="caption-preview">
+                      {{ post.hasCustomCaption ? '✎ custom caption.txt' : (channel.captionTemplate || '(no caption template set)') }}
+                    </span>
+                  </div>
+                  <div class="queue-item-eta">~{{ post.estimatedAt | date: 'MMM d, h:mm a' }}</div>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+    }
+  }
+</div>

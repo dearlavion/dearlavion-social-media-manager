@@ -11,6 +11,9 @@
       <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="view = 'dashboard'">
         <span class="nav-icon">▦</span><span>Dashboard</span>
       </button>
+      <button type="button" class="nav-link" [class.active]="view === 'queue'" (click)="view = 'queue'">
+        <span class="nav-icon">🗂</span><span>Content Queue</span>
+      </button>
       <button type="button" class="nav-link" [class.active]="view === 'scheduler'" (click)="view = 'scheduler'">
         <span class="nav-icon">📅</span><span>Scheduler</span>
       </button>
@@ -41,6 +44,13 @@
       <app-wiki (back)="view = 'dashboard'"></app-wiki>
     } @else if (view === 'scheduler') {
       <app-scheduler [connection]="connection"></app-scheduler>
+    } @else if (view === 'queue') {
+      <app-queue
+        [connection]="connection"
+        [project]="selectedProject ?? null"
+        [channels]="channels"
+        [channelsLoaded]="loaded"
+      ></app-queue>
     } @else if (view === 'setup') {
       <header class="topbar">
         <div class="greeting">

@@ -1,6 +1,6 @@
 # dearlavion-social-media-manager
 
-Automates posting images to Instagram, TikTok, and Facebook, each on its own schedule, across multiple **projects** (e.g. separate brands). Images are dropped into a Google Drive folder; a GitHub Actions workflow syncs them into this repo, and another posts the oldest un-posted image for each due channel via [Buffer](https://buffer.com), which holds the actual OAuth connection to each platform. A small admin UI (hosted on GitHub Pages) manages which projects and channels exist and how often they post.
+Automates posting to Instagram, TikTok, and Facebook, each on its own schedule, across multiple **projects** (e.g. separate brands). Media is dropped into a Google Drive folder — a loose image/video becomes a single post, a subfolder becomes a carousel — and a GitHub Actions workflow syncs it into this repo. Another workflow posts the oldest un-posted item for each due channel via [Buffer](https://buffer.com), which holds the actual OAuth connection to each platform. A small admin UI (hosted on GitHub Pages) manages which projects and channels exist, how often they post, and shows a **Content Queue** of what's waiting to go out.
 
 No server to host: everything runs as scheduled GitHub Actions workflows.
 
@@ -9,9 +9,9 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 ## How it works
 
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
-2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new images in its configured Google Drive folder and commits them into `inbox/<projectId>/<channelId>/`.
-3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest image in `inbox/<projectId>/<channelId>/` via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves it to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
-4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser.
+2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new top-level entries in its configured Google Drive folder. A loose image/video file becomes one post; a **subfolder** becomes a carousel post from everything inside it (up to Instagram's 10-item cap). Each becomes its own post folder — `inbox/<projectId>/<channelId>/<postId>/<file(s)>` — committed into the repo. Any single file over ~90MB is skipped (logged clearly) to stay under GitHub's 100MB push limit.
+3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
+4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts.
 
 ### Why Buffer instead of each platform's API directly
 
@@ -56,7 +56,9 @@ Open the admin UI: **https://dearlavion.github.io/dearlavion-social-media-manage
 Loading works with no token at all, since the repo is public. To **Save**, create a project on **Set Up**, or use either **Post now** button, paste a **fine-grained GitHub PAT** scoped to this repo with both `Contents: read and write` and `Actions: read and write` permissions (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`).
 
 1. On the **Dashboard**, **Load projects**, then select an existing one — or go to **Set Up** (left menu) to create a new one (an id like `travel-besty` and a display name), which creates its `config/<id>/channels.json` and switches you back to the Dashboard with it selected. Set Up is also where the posting-tool connection instructions (Buffer today) live.
-2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `intervalHours`, `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`. To override the caption for one specific image, drop a `<image-filename>.caption.txt` file next to it in the Drive folder (or directly in `inbox/<projectId>/<channelId>/`) — it's used instead of the template and moved along with the image once posted.
+2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `intervalHours`, `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`.
+
+**Media type is set by how you organize the Drive folder**, not a separate field: a loose image or video file at the top level becomes a single-item post; a **subfolder** becomes a carousel post from every image/video inside it (up to 10 items, Instagram's cap). To override the caption for one specific post, add a `caption.txt` file directly to that post's folder on GitHub (`inbox/<projectId>/<channelId>/<postId>/caption.txt`, after `sync-drive` has created it — Drive sync only picks up image/video files, so this one's added on the GitHub side, not from Drive) — it's used instead of the channel's `captionTemplate` and moves along with the rest of that post once published.
 
 The **Post now (all channels)** button runs `sync-drive.yml`, waits for it to finish, then runs `post.yml` — both immediately instead of waiting for their hourly cron, **scoped to the currently loaded project**. It still only syncs what's new in Drive and only posts channels whose `intervalHours` has actually elapsed; it doesn't force anything.
 
@@ -67,6 +69,10 @@ If you ever want to run the admin UI locally instead: `cd admin-ui && npm instal
 ### 5. Turn it on
 
 Workflows run on their cron schedule automatically — across every project in `config/projects.json` — once secrets are set and at least one channel has `"enabled": true`. To test without waiting for the schedule, trigger either workflow manually from the Actions tab (`workflow_dispatch`), optionally passing `project_id` (and `channel_id`) to scope/force a single run.
+
+## Content Queue
+
+**Content Queue** (admin UI, left menu) shows what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first, per channel — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit. Requires a project's channels to already be loaded on the Dashboard.
 
 ## Scheduler (personal reminders)
 
@@ -100,7 +106,7 @@ config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
 config/reminders.json         personal reminders for the Scheduler -- [{id, date, time, dueAt, message, notifiedAt}]
 brand/<projectId>/voice.md    that project's brand voice/content guide
-inbox/<projectId>/<channelId>/    images synced from Drive, waiting to be posted
-posted/<projectId>/<channelId>/   images after a successful post
+inbox/<projectId>/<channelId>/<postId>/    media synced from Drive, one folder per post (1 file = single/video, 2+ = carousel), waiting to be posted
+posted/<projectId>/<channelId>/<postId>/   the same, moved here after a successful post
 admin-ui/                     Angular app (hosted on GitHub Pages) for editing projects/channels/reminders via the GitHub API
 ```

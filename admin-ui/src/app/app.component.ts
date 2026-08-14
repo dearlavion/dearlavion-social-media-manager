@@ -5,13 +5,14 @@ import { ChannelConfig, Project, PLATFORMS, INSTAGRAM_POST_TYPES, PUBLISHERS, ne
 import { GithubConnection, GithubService } from './github.service';
 import { WikiComponent } from './wiki.component';
 import { SchedulerComponent } from './scheduler.component';
+import { QueueComponent } from './queue.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent],
+  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent, QueueComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
@@ -20,7 +21,7 @@ export class AppComponent implements OnInit {
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
-  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' = 'dashboard';
+  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' = 'dashboard';
 
   connection: GithubConnection = {
     owner: 'dearlavion',

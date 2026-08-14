@@ -9,6 +9,12 @@ export interface GithubConnection {
   token: string;
 }
 
+export interface TreeEntry {
+  path: string;
+  type: 'blob' | 'tree' | 'commit';
+  sha: string;
+}
+
 const PROJECTS_PATH = 'config/projects.json';
 const REMINDERS_PATH = 'config/reminders.json';
 
@@ -150,6 +156,23 @@ export class GithubService {
     if (!res.ok) {
       throw new Error(`GitHub API error triggering ${workflowFile}: ${res.status} ${await res.text()}`);
     }
+  }
+
+  /**
+   * Fetches the whole repo tree (paths + blob shas, no content) in one call
+   * via the Git Trees API, recursive so it includes every file under
+   * inbox/ in a single request instead of one Contents API call per post
+   * folder -- keeps the Content Queue view well under the 60/hr
+   * unauthenticated rate limit.
+   */
+  async loadTree(conn: GithubConnection): Promise<TreeEntry[]> {
+    const url = `https://api.github.com/repos/${conn.owner}/${conn.repo}/git/trees/${encodeURIComponent(conn.branch)}?recursive=1`;
+    const res = await fetch(url, { headers: this.headers(conn) });
+    if (!res.ok) {
+      throw new Error(`GitHub API error loading repo tree: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { tree: TreeEntry[]; truncated: boolean };
+    return body.tree;
   }
 
   private async findRunSince(

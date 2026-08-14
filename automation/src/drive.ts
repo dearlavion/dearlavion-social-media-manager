@@ -4,10 +4,23 @@ import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { DRY_RUN } from './config.js';
 
-export interface DriveFile {
+const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+
+export interface DriveEntry {
   id: string;
   name: string;
   createdTime: string;
+  mimeType: string;
+  /** Bytes, as a string per the Drive API; absent for folders. */
+  size?: string;
+}
+
+function isFolder(entry: DriveEntry): boolean {
+  return entry.mimeType === FOLDER_MIME_TYPE;
+}
+
+export function isVideoEntry(entry: DriveEntry): boolean {
+  return entry.mimeType.startsWith('video/');
 }
 
 function driveClient() {
@@ -32,20 +45,42 @@ function driveClient() {
   return google.drive({ version: 'v3', auth });
 }
 
-export async function listNewFiles(folderId: string, alreadySyncedIds: string[]): Promise<DriveFile[]> {
+/**
+ * Lists the top-level entries of a channel's Drive folder that haven't been
+ * synced yet -- both loose media files (each becomes a single-item post)
+ * and subfolders (each becomes a carousel post, see listFolderChildren).
+ */
+export async function listNewEntries(folderId: string, alreadySyncedIds: string[]): Promise<DriveEntry[]> {
   if (DRY_RUN) {
-    console.log(`[DRY_RUN] would list files in Drive folder ${folderId}, excluding ${alreadySyncedIds.length} already-synced ids`);
+    console.log(`[DRY_RUN] would list entries in Drive folder ${folderId}, excluding ${alreadySyncedIds.length} already-synced ids`);
     return [];
   }
   const drive = driveClient();
   const res = await drive.files.list({
-    q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/')`,
-    fields: 'files(id, name, createdTime)',
+    q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType contains 'video/' or mimeType = '${FOLDER_MIME_TYPE}')`,
+    fields: 'files(id, name, createdTime, mimeType, size)',
     orderBy: 'createdTime',
   });
-  const files = (res.data.files ?? []) as DriveFile[];
-  return files.filter((f) => f.id && !alreadySyncedIds.includes(f.id));
+  const entries = (res.data.files ?? []) as DriveEntry[];
+  return entries.filter((e) => e.id && !alreadySyncedIds.includes(e.id));
 }
+
+/** Lists the media files directly inside a carousel subfolder (one level, not recursive). */
+export async function listFolderChildren(folderId: string): Promise<DriveEntry[]> {
+  if (DRY_RUN) {
+    console.log(`[DRY_RUN] would list children of Drive folder ${folderId}`);
+    return [];
+  }
+  const drive = driveClient();
+  const res = await drive.files.list({
+    q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType contains 'video/')`,
+    fields: 'files(id, name, createdTime, mimeType, size)',
+    orderBy: 'name',
+  });
+  return (res.data.files ?? []) as DriveEntry[];
+}
+
+export { isFolder };
 
 export async function downloadFile(fileId: string, destPath: string): Promise<void> {
   if (DRY_RUN) {

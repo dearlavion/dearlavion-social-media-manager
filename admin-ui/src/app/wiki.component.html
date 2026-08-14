@@ -48,12 +48,30 @@
       <tr><td>Platform</td><td>Label only, for your reference — the real destination is set by Posting tool + its ID field below.</td></tr>
       <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
       <tr><td>Interval (h)</td><td>How many hours must pass since the last post before this channel is due again.</td></tr>
-      <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls images from — the long id from the folder's share URL.</td></tr>
+      <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls media from — the long id from the folder's share URL.</td></tr>
       <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>
       <tr><td>IG post type</td><td>Instagram only — post, story, or reel. Defaults to post.</td></tr>
-      <tr><td>Caption template</td><td>Default caption text. Drop a <code>&lt;image-filename&gt;.caption.txt</code> file next to an image in Drive to override it for that one post.</td></tr>
+      <tr><td>Caption template</td><td>Default caption text for every post on this channel, unless a post's folder has its own <code>caption.txt</code> (see below).</td></tr>
     </tbody>
   </table>
+
+  <h2>Media types: single, carousel, video</h2>
+  <p>
+    There's no separate "media type" field — it's set by how you organize the channel's Drive folder:
+  </p>
+  <ul>
+    <li>A loose <strong>image or video file</strong> at the top level of the folder → a single-item post.</li>
+    <li>A <strong>subfolder</strong> → a carousel post made from every image/video inside it (up to 10 items —
+      Instagram's cap; more than that is left in <code>inbox/</code> with a clear log message instead of posting).</li>
+  </ul>
+  <p>
+    Each becomes its own post folder in <code>inbox/&lt;projectId&gt;/&lt;channelId&gt;/&lt;postId&gt;/</code> once
+    synced. To give one specific post a custom caption instead of the channel's default template, add a
+    <code>caption.txt</code> file directly to that post's folder on GitHub — Drive sync only picks up image/video
+    files, so this file has to be added on the GitHub side (via the Content Queue's post folder path, or the
+    Contents tab), not through Drive. Any single file over ~90MB is skipped during sync, logged clearly, rather than
+    breaking the run.
+  </p>
 
   <h2>5. Save</h2>
   <p>
@@ -93,6 +111,26 @@
     <li>A 401 on Save/Post now almost always means the token field is empty or missing the Actions permission.</li>
     <li>A 403 on Save usually means the token's repository access was left on a read-only default when it was created.</li>
   </ul>
+
+  <h1>Using the Content Queue</h1>
+  <p class="intro">
+    <strong>Content Queue</strong> (left menu) shows what's waiting in <code>inbox/</code> for the currently
+    selected project, per channel, oldest first — before it actually posts.
+  </p>
+  <ol>
+    <li>Load a project's channels on the Dashboard first (Content Queue reuses that same selection).</li>
+    <li>Switch to <strong>Content Queue</strong> and click <strong>Load queue</strong>.</li>
+    <li>
+      Each channel lists its queued posts with a media-type badge (<code>image</code>, <code>video</code>, or
+      <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and a rough
+      <strong>~estimated</strong> next-post time based on <code>lastPostedAt + intervalHours</code> — a real
+      <strong>Post now</strong> run or the hourly cron can shift it.
+    </li>
+  </ol>
+  <p>
+    It fetches the whole <code>inbox/</code> tree in a single Git Trees API call instead of one request per post
+    folder, to stay well under GitHub's 60/hr rate limit for unauthenticated requests.
+  </p>
 
   <h1>Using the Scheduler (reminders)</h1>
   <p class="intro">

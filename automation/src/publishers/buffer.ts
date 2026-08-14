@@ -1,5 +1,17 @@
 import { DRY_RUN } from '../config.js';
-import type { PublishFn } from './types.js';
+import type { PublishFn, PostMedia } from './types.js';
+
+/**
+ * Buffer's assets field is an ordered list where each entry is exactly one
+ * of image/video/document/link -- a carousel is just multiple entries.
+ * https://developers.buffer.com/examples/create-video-post.html
+ */
+function toBufferAsset(item: PostMedia): Record<string, unknown> {
+  if (item.type === 'video') {
+    return { video: { url: item.url, metadata: { thumbnailOffset: 0 } } };
+  }
+  return { image: { url: item.url } };
+}
 
 const BUFFER_API_URL = 'https://api.buffer.com';
 
@@ -57,9 +69,12 @@ async function bufferGraphQL<T>(query: string, variables: Record<string, unknown
  * than adding to Buffer's own queue, since our GitHub Actions cron is
  * already the thing deciding *when* to post.
  */
-export const publish: PublishFn = async ({ publicImageUrl, caption, channel }) => {
+export const publish: PublishFn = async ({ media, caption, channel }) => {
   if (!channel.bufferChannelId) {
     throw new Error(`Channel "${channel.id}" has no bufferChannelId configured`);
+  }
+  if (media.length === 0) {
+    throw new Error(`Channel "${channel.id}": publish() called with no media`);
   }
 
   // Instagram requires an explicit post type (post/story/reel) plus
@@ -70,10 +85,12 @@ export const publish: PublishFn = async ({ publicImageUrl, caption, channel }) =
       ? { instagram: { type: channel.instagramPostType ?? 'post', shouldShareToFeed: true } }
       : undefined;
 
+  const assets = media.map(toBufferAsset);
+
   if (DRY_RUN) {
     console.log(
       `[DRY_RUN][buffer] would post to Buffer channel ${channel.bufferChannelId} (${channel.platform}): ` +
-        `"${caption}" with image ${publicImageUrl}${metadata ? `, metadata=${JSON.stringify(metadata)}` : ''}`,
+        `"${caption}" with ${media.length} asset(s)=${JSON.stringify(assets)}${metadata ? `, metadata=${JSON.stringify(metadata)}` : ''}`,
     );
     return;
   }
@@ -82,7 +99,7 @@ export const publish: PublishFn = async ({ publicImageUrl, caption, channel }) =
     input: {
       channelId: channel.bufferChannelId,
       text: caption,
-      assets: [{ image: { url: publicImageUrl } }],
+      assets,
       mode: 'shareNow',
       schedulingType: 'automatic',
       ...(metadata ? { metadata } : {}),
