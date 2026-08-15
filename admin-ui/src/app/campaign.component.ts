@@ -62,6 +62,10 @@ export class CampaignComponent {
   inboxLoaded = false;
   loadingInbox = false;
 
+  // Editing an existing campaign's per-channel goal, in detail mode
+  editingGoalChannelId: string | null = null;
+  editingGoalValue = 0;
+
   constructor(private readonly github: GithubService) {}
 
   get selectedCampaign(): Campaign | undefined {
@@ -176,6 +180,7 @@ export class CampaignComponent {
     this.selectedCampaignId = campaignId;
     this.statusMessage = '';
     this.errorMessage = '';
+    this.editingGoalChannelId = null;
     if (!this.inboxLoaded) {
       void this.loadInbox();
     }
@@ -266,6 +271,37 @@ export class CampaignComponent {
   async unlinkSlot(slot: CampaignSlot): Promise<void> {
     slot.linkedPostPath = undefined;
     slot.status = 'planned';
+    await this.save();
+  }
+
+  // --- detail: editing an existing campaign's per-channel goal ---
+
+  startEditGoal(channelId: string, currentTarget: number): void {
+    this.editingGoalChannelId = channelId;
+    this.editingGoalValue = currentTarget;
+  }
+
+  cancelEditGoal(): void {
+    this.editingGoalChannelId = null;
+  }
+
+  async saveEditGoal(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    const channelId = this.editingGoalChannelId;
+    if (!campaign || !channelId) return;
+
+    const targetCount = Math.max(0, Math.floor(this.editingGoalValue) || 0);
+    const existing = campaign.channelTargets.find((t) => t.channelId === channelId);
+    if (targetCount === 0) {
+      // 0 means "no goal" -- drop the entry rather than persist a meaningless target.
+      campaign.channelTargets = campaign.channelTargets.filter((t) => t.channelId !== channelId);
+    } else if (existing) {
+      existing.targetCount = targetCount;
+    } else {
+      campaign.channelTargets = [...campaign.channelTargets, { channelId, targetCount }];
+    }
+
+    this.editingGoalChannelId = null;
     await this.save();
   }
 }

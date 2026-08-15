@@ -84,6 +84,7 @@ export function nextOpenSlot(campaign: Campaign): CampaignSlot | undefined {
 
 export interface ChannelProgress {
   channelId: string;
+  /** 0 means no goal has been set for this channel yet. */
   target: number;
   posted: number;
   planned: number;
@@ -91,15 +92,22 @@ export interface ChannelProgress {
 
 /**
  * Per-channel target vs. how many of that channel's slots are actually
- * posted so far. `channelTargets` defaults to [] since campaigns created
- * before this field existed won't have it on GitHub.
+ * posted so far -- one row per channel the campaign actually touches
+ * (from its slots), even if no goal has been set for it yet, so the
+ * detail view has somewhere to offer "set a goal" for every channel.
+ * `channelTargets` defaults to [] since campaigns created before this
+ * field existed won't have it on GitHub.
  */
 export function channelProgress(campaign: Campaign): ChannelProgress[] {
-  return (campaign.channelTargets ?? []).map((t) => {
-    const channelSlots = campaign.slots.filter((s) => s.channelId === t.channelId);
+  const targets = campaign.channelTargets ?? [];
+  const targetByChannel = new Map(targets.map((t) => [t.channelId, t.targetCount]));
+  const channelIds = new Set<string>([...campaign.slots.map((s) => s.channelId), ...targetByChannel.keys()]);
+
+  return [...channelIds].sort().map((channelId) => {
+    const channelSlots = campaign.slots.filter((s) => s.channelId === channelId);
     return {
-      channelId: t.channelId,
-      target: t.targetCount,
+      channelId,
+      target: targetByChannel.get(channelId) ?? 0,
       posted: channelSlots.filter((s) => s.status === 'posted').length,
       planned: channelSlots.length,
     };

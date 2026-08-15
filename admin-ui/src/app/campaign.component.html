@@ -219,9 +219,20 @@
             @for (p of channelProgress(selectedCampaign); track p.channelId) {
               <div class="goal-row">
                 <span class="slot-channel">{{ p.channelId }}</span>
-                <span class="goal-progress" [class.goal-met]="p.posted >= p.target">
-                  {{ p.posted }}/{{ p.target }} posted toward goal ({{ p.planned }} planned)
-                </span>
+
+                @if (editingGoalChannelId === p.channelId) {
+                  <input type="number" min="0" [(ngModel)]="editingGoalValue" class="goal-edit-input" />
+                  <button type="button" class="btn-ghost" (click)="saveEditGoal()" [disabled]="saving">Save</button>
+                  <button type="button" class="btn-ghost" (click)="cancelEditGoal()">Cancel</button>
+                } @else if (p.target > 0) {
+                  <span class="goal-progress" [class.goal-met]="p.posted >= p.target">
+                    {{ p.posted }}/{{ p.target }} posted toward goal ({{ p.planned }} planned)
+                  </span>
+                  <button type="button" class="btn-ghost" (click)="startEditGoal(p.channelId, p.target)">Edit goal</button>
+                } @else {
+                  <span class="goal-progress">{{ p.planned }} planned, no goal set</span>
+                  <button type="button" class="btn-ghost" (click)="startEditGoal(p.channelId, 0)">Set goal</button>
+                }
               </div>
             }
           </div>

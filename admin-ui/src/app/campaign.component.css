@@ -265,6 +265,10 @@ label {
   color: var(--color-leaf);
 }
 
+.goal-edit-input {
+  width: 70px;
+}
+
 .guidance-label {
   margin-bottom: 12px;
 }
