@@ -72,9 +72,14 @@ Workflows run on their cron schedule automatically — across every project in `
 
 ## Content Queue
 
-**Content Queue** (admin UI, left menu) shows what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first, per channel — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit. Requires a project's channels to already be loaded on the Dashboard.
+**Content Queue** (admin UI, left menu) has two sections per channel:
 
-**Connected to Campaigns**: loading the queue also loads the project's campaigns, so each post shows either a `🎯 <campaign> — <stage>` badge (already linked to a slot) or a **Link to "…"** button per open slot it could fulfil (for campaigns targeting that channel). Same link Campaigns' detail view creates — this is just the other side of it, so you can link from whichever view you happen to be looking at.
+- **Synced** — what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit.
+- **Planned (ongoing campaigns)** — a lightweight content-planning checklist, sourced from every campaign whose **status is `ongoing`** (loaded alongside the tree). Add a planned post directly here (pick which ongoing campaign it belongs to, a stage, guidance), edit or remove it, and toggle a **todo / done** prep-status chip tracking whether you've actually created that content yet — independent of whether it's synced or posted.
+
+Requires a project's channels to already be loaded on the Dashboard.
+
+**Connected to Campaigns**: each Synced post shows either a `🎯 <campaign> — <stage>` badge (already linked to a slot) or a **Link to "…"** button per open slot it could fulfil. Same link Campaigns' own detail view creates — this is just the other side of it, so you can link, or now plan and add new slots, from whichever view you happen to be looking at.
 
 ## Campaigns
 

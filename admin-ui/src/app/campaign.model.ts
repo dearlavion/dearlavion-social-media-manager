@@ -1,5 +1,8 @@
 export type CampaignSlotStatus = 'planned' | 'queued' | 'posted';
 
+/** Whether the content for a planned slot has actually been created yet -- independent of publish lifecycle. */
+export type PrepStatus = 'todo' | 'done';
+
 /** The campaign's own lifecycle stage -- set by hand, independent of slot progress. */
 export type CampaignStatus = 'open' | 'ongoing' | 'done';
 
@@ -18,6 +21,8 @@ export interface CampaignSlot {
   guidance: string;
   channelId: string;
   status: CampaignSlotStatus;
+  /** Content-creation checklist state -- "have I actually made this yet", separate from `status`. Defaults to "todo". */
+  prepStatus?: PrepStatus;
   linkedPostPath?: string;
   postedAt?: string;
 }
@@ -81,6 +86,7 @@ export function newSlot(stage: string, guidance: string, channelId: string): Cam
     guidance,
     channelId,
     status: 'planned',
+    prepStatus: 'todo',
   };
 }
 

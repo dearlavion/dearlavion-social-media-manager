@@ -48,6 +48,8 @@ export interface CampaignSlot {
   guidance: string;
   channelId: string;
   status: 'planned' | 'queued' | 'posted';
+  /** Content-creation checklist state, set in the admin UI -- purely informational, post.ts doesn't act on it. */
+  prepStatus?: 'todo' | 'done';
   linkedPostPath?: string;
   postedAt?: string;
 }

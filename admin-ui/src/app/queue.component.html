@@ -2,7 +2,7 @@
   <header class="topbar">
     <div class="greeting">
       <h1>Content Queue</h1>
-      <p>What's waiting in <code>inbox/</code> for each channel, oldest first. Next-post times are estimates -- Post now and manual runs can shift them.</p>
+      <p>What's waiting in <code>inbox/</code> for each channel, oldest first, plus planned posts for ongoing campaigns. Next-post times are estimates -- Post now and manual runs can shift them.</p>
     </div>
   </header>
 
@@ -20,7 +20,7 @@
       <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
         {{ loading ? 'Loading…' : (loaded ? 'Refresh queue' : 'Load queue') }}
       </button>
-      <p class="hint">Fetches the whole repo tree in one call, then reads what's under <code>inbox/{{ project.id }}/</code>.</p>
+      <p class="hint">Fetches the whole repo tree in one call, then reads what's under <code>inbox/{{ project.id }}/</code> plus this project's ongoing campaigns.</p>
     </section>
 
     @if (errorMessage) {
@@ -31,6 +31,8 @@
       @for (channel of channels; track channel.id) {
         <section class="card">
           <div class="card-header"><h2>{{ channel.id }} <span class="muted">({{ channel.platform }})</span></h2></div>
+
+          <h3 class="subhead">Synced</h3>
           @if (queueFor(channel.id).length === 0) {
             <p class="hint">Queue is empty.</p>
           } @else {
@@ -71,7 +73,7 @@
                           <button
                             type="button"
                             class="btn-ghost"
-                            [disabled]="linking"
+                            [disabled]="saving"
                             (click)="linkToCampaign(target, post)"
                           >
                             Link to "{{ target.campaign.name }}: {{ target.slot.stage }}"
@@ -84,6 +86,83 @@
                 </div>
               }
             </div>
+          }
+
+          <h3 class="subhead">Planned (ongoing campaigns)</h3>
+          @if (plannedFor(channel.id).length === 0) {
+            <p class="hint">Nothing planned yet.</p>
+          } @else {
+            <div class="planned-list">
+              @for (target of plannedFor(channel.id); track target.slot.id) {
+                <div class="planned-item">
+                  @if (editingPlannedSlotId === target.slot.id) {
+                    <div class="planned-edit-form">
+                      <input [(ngModel)]="editingPlannedStage" placeholder="stage" class="planned-stage-input" />
+                      <textarea [(ngModel)]="editingPlannedGuidance" rows="2" placeholder="guidance"></textarea>
+                      <div class="planned-edit-actions">
+                        <button type="button" class="btn-ghost" [disabled]="saving" (click)="saveEditPlanned(target.slot)">Save</button>
+                        <button type="button" class="btn-ghost" (click)="cancelEditPlanned()">Cancel</button>
+                      </div>
+                    </div>
+                  } @else {
+                    <span class="stage-badge">{{ target.slot.stage }}</span>
+                    <span class="campaign-name">{{ target.campaign.name }}</span>
+                    <span class="planned-guidance">{{ target.slot.guidance || '(no guidance)' }}</span>
+                    <button
+                      type="button"
+                      class="prep-status-chip"
+                      [class.done]="target.slot.prepStatus === 'done'"
+                      [disabled]="saving"
+                      (click)="togglePrepStatus(target.slot)"
+                    >
+                      {{ target.slot.prepStatus === 'done' ? '✓ done' : 'todo' }}
+                    </button>
+                    <div class="planned-item-actions">
+                      <button type="button" class="btn-ghost" (click)="startEditPlanned(target.slot)">Edit</button>
+                      <button type="button" class="btn-ghost" [disabled]="saving" (click)="removePlanned(target.campaign, target.slot)">Remove</button>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (!hasOngoingCampaigns) {
+            <p class="hint">No ongoing campaigns for this project -- set a campaign's status to "ongoing" to plan posts here.</p>
+          } @else if (addingPlannedForChannel === channel.id) {
+            <div class="planned-add-form">
+              <div class="form-row">
+                <label>
+                  Campaign
+                  <select [(ngModel)]="newPlannedCampaignId">
+                    @for (c of ongoingCampaigns; track c.id) {
+                      <option [value]="c.id">{{ c.name }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  Stage
+                  <input [(ngModel)]="newPlannedStage" placeholder="e.g. awareness" />
+                </label>
+              </div>
+              <div class="chip-row">
+                @for (s of defaultStages; track s.stage) {
+                  <button type="button" class="chip" (click)="pickPlannedStage(s.stage, s.guidance)">{{ s.stage }}</button>
+                }
+              </div>
+              <label class="guidance-label">
+                Guidance
+                <textarea [(ngModel)]="newPlannedGuidance" rows="2" placeholder="What should this post actually be?"></textarea>
+              </label>
+              <div class="planned-edit-actions">
+                <button type="button" class="btn-primary" [disabled]="saving || !newPlannedStage.trim()" (click)="addPlanned(channel.id)">
+                  {{ saving ? 'Adding…' : 'Add planned post' }}
+                </button>
+                <button type="button" class="btn-ghost" (click)="cancelAddPlanned()">Cancel</button>
+              </div>
+            </div>
+          } @else {
+            <button type="button" class="btn-secondary" (click)="startAddPlanned(channel.id)">+ Add planned post</button>
           }
         </section>
       }

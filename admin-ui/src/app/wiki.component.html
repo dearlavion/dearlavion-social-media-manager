@@ -114,30 +114,47 @@
 
   <h1>Using the Content Queue</h1>
   <p class="intro">
-    <strong>Content Queue</strong> (left menu) shows what's waiting in <code>inbox/</code> for the currently
-    selected project, per channel, oldest first — before it actually posts.
+    <strong>Content Queue</strong> (left menu) has two sections per channel: what's actually waiting in
+    <code>inbox/</code> ("Synced"), and a lightweight planning checklist sourced from campaigns that are actively
+    running ("Planned").
   </p>
   <ol>
     <li>Load a project's channels on the Dashboard first (Content Queue reuses that same selection).</li>
-    <li>Switch to <strong>Content Queue</strong> and click <strong>Load queue</strong>.</li>
+    <li>Switch to <strong>Content Queue</strong> and click <strong>Load queue</strong> — this fetches the whole
+      <code>inbox/</code> tree in a single Git Trees API call (rather than one request per post folder, to stay
+      well under GitHub's 60/hr unauthenticated rate limit) <em>and</em> the project's campaigns.</li>
     <li>
-      Each channel lists its queued posts with a media-type badge (<code>image</code>, <code>video</code>, or
-      <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and a rough
+      <strong>Synced</strong> lists queued posts with a media-type badge (<code>image</code>, <code>video</code>,
+      or <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and a rough
       <strong>~estimated</strong> next-post time based on <code>lastPostedAt + intervalHours</code> — a real
       <strong>Post now</strong> run or the hourly cron can shift it.
     </li>
   </ol>
   <p>
-    It fetches the whole <code>inbox/</code> tree in a single Git Trees API call instead of one request per post
-    folder, to stay well under GitHub's 60/hr rate limit for unauthenticated requests.
+    <strong>Synced posts connect to Campaigns</strong>: a post already linked to a slot shows a
+    <code>🎯 Campaign — stage</code> badge; one that isn't linked yet, with an open (<code>planned</code>) slot
+    available for that channel in some campaign, shows a <strong>Link to "…"</strong> button per candidate slot.
+    Same link Campaigns' own detail view creates (see below) — just reachable from whichever side you're looking
+    at.
   </p>
   <p>
-    <strong>Loading the queue also loads the project's campaigns</strong>, so each post shows its campaign
-    connection: if it's already linked to a slot, a <code>🎯 Campaign — stage</code> badge appears instead of the
-    caption preview's usual spot; if it isn't linked yet but an open (<code>planned</code>) slot exists for that
-    channel in some campaign, a <strong>Link to "…"</strong> button appears for each candidate slot. This is the
-    same link Campaigns' own detail view creates (see below) — just reachable from whichever side you're looking
-    at. Clicking it needs a token, same as any other save.
+    <strong>Planned</strong> only shows campaigns whose <strong>status is "ongoing"</strong> (set from a campaign's
+    own detail view) — this is deliberately narrower than "every campaign that exists," so Content Queue reflects
+    what you're actively running, not everything you've ever planned. For each channel you can:
+  </p>
+  <ul>
+    <li><strong>+ Add planned post</strong> — pick which ongoing campaign it belongs to, a stage (quick-pick or
+      your own), and guidance — creates a new slot on that campaign directly, without going through the builder.</li>
+    <li><strong>Edit</strong> a planned post's stage/guidance inline, or <strong>Remove</strong> it entirely.</li>
+    <li>
+      Toggle its <strong>todo / done</strong> chip — a content-<em>creation</em> checklist ("have I actually made
+      this yet"), separate from the slot's real publish lifecycle (<code>planned</code> → <code>queued</code> →
+      <code>posted</code>). A planned post can be marked "done" (content ready) while still showing up here,
+      right up until it's linked to a synced post and eventually posted.
+    </li>
+  </ul>
+  <p>
+    All of the above needs a token, same as any other save on this page.
   </p>
 
   <h1>Using Campaigns</h1>

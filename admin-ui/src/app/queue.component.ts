@@ -1,9 +1,18 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 import { InboxPost, parseInboxTree } from './inbox-tree.util';
-import { Campaign, LinkedSlot, findLinkedSlot, openSlotsForChannel } from './campaign.model';
+import {
+  Campaign,
+  CampaignSlot,
+  DEFAULT_STAGES,
+  LinkedSlot,
+  findLinkedSlot,
+  newSlot,
+  openSlotsForChannel,
+} from './campaign.model';
 
 interface QueuedPost extends InboxPost {
   estimatedAt: Date;
@@ -12,7 +21,7 @@ interface QueuedPost extends InboxPost {
 @Component({
   selector: 'app-queue',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './queue.component.html',
   styleUrl: './queue.component.css',
 })
@@ -22,15 +31,28 @@ export class QueueComponent {
   @Input() channels: ChannelConfig[] = [];
   @Input() channelsLoaded = false;
 
+  readonly defaultStages = DEFAULT_STAGES;
+
   loading = false;
   loaded = false;
+  saving = false;
   errorMessage = '';
   private queuesByChannel = new Map<string, QueuedPost[]>();
 
-  // Campaign linking -- which slot (if any) each queued post already fulfils, and which open slots it could.
+  // Only ongoing campaigns -- Content Queue plans posts against what's actively running.
   private campaigns: Campaign[] = [];
   private campaignsSha: string | null = null;
-  linking = false;
+
+  // Adding a new planned post, one channel at a time.
+  addingPlannedForChannel: string | null = null;
+  newPlannedCampaignId = '';
+  newPlannedStage = '';
+  newPlannedGuidance = '';
+
+  // Editing an existing planned post inline.
+  editingPlannedSlotId: string | null = null;
+  editingPlannedStage = '';
+  editingPlannedGuidance = '';
 
   constructor(private readonly github: GithubService) {}
 
@@ -50,6 +72,18 @@ export class QueueComponent {
     return openSlotsForChannel(this.campaigns, post.channelId);
   }
 
+  get hasOngoingCampaigns(): boolean {
+    return this.campaigns.length > 0;
+  }
+
+  get ongoingCampaigns(): Campaign[] {
+    return this.campaigns;
+  }
+
+  plannedFor(channelId: string): LinkedSlot[] {
+    return openSlotsForChannel(this.campaigns, channelId);
+  }
+
   async load(): Promise<void> {
     if (!this.project) return;
     this.errorMessage = '';
@@ -60,7 +94,7 @@ export class QueueComponent {
         this.github.loadCampaigns(this.connection, this.project.id),
       ]);
       this.queuesByChannel = this.buildQueues(parseInboxTree(tree, this.project.id));
-      this.campaigns = campaigns;
+      this.campaigns = campaigns.filter((c) => c.status === 'ongoing');
       this.campaignsSha = sha;
       this.loaded = true;
     } catch (err) {
@@ -70,19 +104,81 @@ export class QueueComponent {
     }
   }
 
-  async linkToCampaign(target: LinkedSlot, post: QueuedPost): Promise<void> {
+  private async saveCampaigns(): Promise<void> {
     if (!this.project) return;
     this.errorMessage = '';
-    this.linking = true;
+    this.saving = true;
     try {
-      target.slot.linkedPostPath = post.path;
-      target.slot.status = 'queued';
       this.campaignsSha = await this.github.saveCampaigns(this.connection, this.project.id, this.campaigns, this.campaignsSha);
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
-      this.linking = false;
+      this.saving = false;
     }
+  }
+
+  async linkToCampaign(target: LinkedSlot, post: QueuedPost): Promise<void> {
+    target.slot.linkedPostPath = post.path;
+    target.slot.status = 'queued';
+    await this.saveCampaigns();
+  }
+
+  // --- planned posts: add ---
+
+  startAddPlanned(channelId: string): void {
+    this.addingPlannedForChannel = channelId;
+    this.newPlannedCampaignId = this.campaigns[0]?.id ?? '';
+    this.newPlannedStage = '';
+    this.newPlannedGuidance = '';
+  }
+
+  cancelAddPlanned(): void {
+    this.addingPlannedForChannel = null;
+  }
+
+  pickPlannedStage(stage: string, guidance: string): void {
+    this.newPlannedStage = stage;
+    this.newPlannedGuidance = guidance;
+  }
+
+  async addPlanned(channelId: string): Promise<void> {
+    const stage = this.newPlannedStage.trim();
+    const campaign = this.campaigns.find((c) => c.id === this.newPlannedCampaignId);
+    if (!stage || !campaign) return;
+    campaign.slots = [...campaign.slots, newSlot(stage, this.newPlannedGuidance.trim(), channelId)];
+    this.addingPlannedForChannel = null;
+    await this.saveCampaigns();
+  }
+
+  // --- planned posts: edit / remove / prep status ---
+
+  startEditPlanned(slot: CampaignSlot): void {
+    this.editingPlannedSlotId = slot.id;
+    this.editingPlannedStage = slot.stage;
+    this.editingPlannedGuidance = slot.guidance;
+  }
+
+  cancelEditPlanned(): void {
+    this.editingPlannedSlotId = null;
+  }
+
+  async saveEditPlanned(slot: CampaignSlot): Promise<void> {
+    const stage = this.editingPlannedStage.trim();
+    if (!stage) return;
+    slot.stage = stage;
+    slot.guidance = this.editingPlannedGuidance.trim();
+    this.editingPlannedSlotId = null;
+    await this.saveCampaigns();
+  }
+
+  async removePlanned(campaign: Campaign, slot: CampaignSlot): Promise<void> {
+    campaign.slots = campaign.slots.filter((s) => s.id !== slot.id);
+    await this.saveCampaigns();
+  }
+
+  async togglePrepStatus(slot: CampaignSlot): Promise<void> {
+    slot.prepStatus = slot.prepStatus === 'done' ? 'todo' : 'done';
+    await this.saveCampaigns();
   }
 
   private buildQueues(posts: InboxPost[]): Map<string, QueuedPost[]> {
