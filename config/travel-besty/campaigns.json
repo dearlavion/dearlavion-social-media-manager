@@ -14,6 +14,12 @@
         "channelId": "travel-besty-instagram",
         "status": "planned"
       }
+    ],
+    "channelTargets": [
+      {
+        "channelId": "travel-besty-instagram",
+        "targetCount": 5
+      }
     ]
   }
 ]
