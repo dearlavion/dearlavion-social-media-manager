@@ -112,7 +112,11 @@
         }
 
         @if (step === 3) {
-          <p class="hint">Build the ordered sequence of posts. Pick a stage (or type your own), edit the guidance, pick a channel, then Add.</p>
+          <p class="hint">
+            Optional — build the ordered sequence of posts now, or skip this and add planned posts later from
+            Content Queue's "Planned" section for this project. Pick a stage (or type your own), edit the
+            guidance, pick a channel, then Add.
+          </p>
 
           <div class="goal-list">
             @for (channelId of draftChannelIds; track channelId) {
@@ -181,23 +185,25 @@
 
           <div class="wizard-actions">
             <button type="button" class="btn-secondary" (click)="goToStep(2)">Back</button>
-            <button type="button" class="btn-primary" (click)="goToStep(4)" [disabled]="draftSlots.length === 0">
-              Review
-            </button>
+            <button type="button" class="btn-primary" (click)="goToStep(4)">Review</button>
           </div>
         }
 
         @if (step === 4) {
           <p class="hint"><strong>{{ draftName }}</strong> — {{ draftGoal || 'no goal set' }}</p>
-          <ol class="slot-list">
-            @for (slot of draftSlots; track slot.id) {
-              <li class="slot-row">
-                <span class="stage-badge">{{ slot.stage }}</span>
-                <span class="slot-channel">{{ slot.channelId }}</span>
-                <span class="slot-guidance">{{ slot.guidance || '(no guidance)' }}</span>
-              </li>
-            }
-          </ol>
+          @if (draftSlots.length === 0) {
+            <p class="hint">No posts planned yet — that's fine, add them later from Content Queue's "Planned" section.</p>
+          } @else {
+            <ol class="slot-list">
+              @for (slot of draftSlots; track slot.id) {
+                <li class="slot-row">
+                  <span class="stage-badge">{{ slot.stage }}</span>
+                  <span class="slot-channel">{{ slot.channelId }}</span>
+                  <span class="slot-guidance">{{ slot.guidance || '(no guidance)' }}</span>
+                </li>
+              }
+            </ol>
+          }
           <div class="wizard-actions">
             <button type="button" class="btn-secondary" (click)="goToStep(3)">Back</button>
             <button type="button" class="btn-primary" (click)="createCampaign()" [disabled]="saving">

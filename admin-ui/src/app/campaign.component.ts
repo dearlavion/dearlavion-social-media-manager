@@ -254,8 +254,8 @@ export class CampaignComponent {
   async createCampaign(): Promise<void> {
     const name = this.draftName.trim();
     const goal = this.draftGoal.trim();
-    if (!name || this.draftSlots.length === 0) {
-      this.errorMessage = 'A campaign needs a name and at least one slot.';
+    if (!name) {
+      this.errorMessage = 'A campaign needs a name.';
       return;
     }
     const campaign = newCampaign(name, goal);
