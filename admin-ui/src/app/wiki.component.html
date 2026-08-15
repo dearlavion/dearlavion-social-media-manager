@@ -145,10 +145,12 @@
     <li><strong>Step 1</strong> — name and goal (start/end dates are optional, informational only).</li>
     <li><strong>Step 2</strong> — pick which channel(s) this campaign runs on.</li>
     <li>
-      <strong>Step 3</strong> — add slots in order: pick a stage (quick-pick <code>awareness</code> /
-      <code>consideration</code> / <code>conversion</code> / <code>loyalty</code> for sensible default guidance, or
-      type your own), edit the guidance text, pick a channel, click <strong>Add slot</strong>. Reorder with the
-      ↑/↓ buttons before moving on.
+      <strong>Step 3</strong> — for each channel in scope, optionally set a <strong>goal</strong>: how many posts
+      you're aiming to actually get published on that channel during this campaign (a live "X/Y slots added"
+      counter next to it tracks how many you've drafted so far — it doesn't block you from adding more or fewer).
+      Then add slots in order: pick a stage (quick-pick <code>awareness</code> / <code>consideration</code> /
+      <code>conversion</code> / <code>loyalty</code> for sensible default guidance, or type your own), edit the
+      guidance text, pick a channel, click <strong>Add slot</strong>. Reorder with the ↑/↓ buttons before moving on.
     </li>
     <li><strong>Step 4</strong> — review the ordered list, then <strong>Create campaign</strong> (needs a token, same as Save elsewhere).</li>
   </ol>
@@ -162,7 +164,9 @@
   </p>
   <p>
     From there it's automatic: when <code>post.yml</code> actually publishes that linked post, <code>post.ts</code>
-    flips the slot to <code>posted</code> and records when, without any manual bookkeeping.
+    flips the slot to <code>posted</code> and records when, without any manual bookkeeping. If you set a per-channel
+    goal in step 3, the detail view's header shows actual posted count against it (e.g. "3/5 posted toward goal") —
+    purely a progress readout, nothing enforces it.
   </p>
   <p>
     Campaigns are a planning/tracking layer only — they don't gate or reorder what actually posts. Each channel's

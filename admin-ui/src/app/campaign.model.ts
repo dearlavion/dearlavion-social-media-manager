@@ -17,6 +17,12 @@ export interface CampaignSlot {
   postedAt?: string;
 }
 
+/** How many posts you're aiming for on one channel over the life of a campaign -- tracked against actual `posted` slots. */
+export interface ChannelTarget {
+  channelId: string;
+  targetCount: number;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -25,6 +31,7 @@ export interface Campaign {
   endDate: string | null;
   createdAt: string;
   slots: CampaignSlot[];
+  channelTargets: ChannelTarget[];
 }
 
 /** Quick-pick stages offered by the builder, with generic (project-agnostic) default guidance text. */
@@ -56,6 +63,7 @@ export function newCampaign(name: string, goal: string): Campaign {
     endDate: null,
     createdAt: new Date().toISOString(),
     slots: [],
+    channelTargets: [],
   };
 }
 
@@ -72,4 +80,28 @@ export function newSlot(stage: string, guidance: string, channelId: string): Cam
 /** The first slot not yet posted, in order -- "what to do next" for a campaign. */
 export function nextOpenSlot(campaign: Campaign): CampaignSlot | undefined {
   return campaign.slots.find((s) => s.status !== 'posted');
+}
+
+export interface ChannelProgress {
+  channelId: string;
+  target: number;
+  posted: number;
+  planned: number;
+}
+
+/**
+ * Per-channel target vs. how many of that channel's slots are actually
+ * posted so far. `channelTargets` defaults to [] since campaigns created
+ * before this field existed won't have it on GitHub.
+ */
+export function channelProgress(campaign: Campaign): ChannelProgress[] {
+  return (campaign.channelTargets ?? []).map((t) => {
+    const channelSlots = campaign.slots.filter((s) => s.channelId === t.channelId);
+    return {
+      channelId: t.channelId,
+      target: t.targetCount,
+      posted: channelSlots.filter((s) => s.status === 'posted').length,
+      planned: channelSlots.length,
+    };
+  });
 }

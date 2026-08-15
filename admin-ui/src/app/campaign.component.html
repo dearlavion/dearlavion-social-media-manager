@@ -111,6 +111,26 @@
         @if (step === 3) {
           <p class="hint">Build the ordered sequence of posts. Pick a stage (or type your own), edit the guidance, pick a channel, then Add.</p>
 
+          <div class="goal-list">
+            @for (channelId of draftChannelIds; track channelId) {
+              <div class="goal-row">
+                <span class="slot-channel">{{ channelId }}</span>
+                <label class="goal-input-label">
+                  Goal (posts)
+                  <input
+                    type="number"
+                    min="0"
+                    [ngModel]="draftChannelTargets[channelId]"
+                    (ngModelChange)="draftChannelTargets[channelId] = $event"
+                  />
+                </label>
+                <span class="goal-progress">
+                  {{ slotCountForChannel(channelId) }}/{{ draftChannelTargets[channelId] || 0 }} slots added
+                </span>
+              </div>
+            }
+          </div>
+
           <div class="chip-row">
             @for (s of defaultStages; track s.stage) {
               <button type="button" class="chip" (click)="pickStage(s.stage, s.guidance)">{{ s.stage }}</button>
@@ -193,6 +213,19 @@
       <section class="card">
         <div class="card-header"><h2>{{ selectedCampaign.name }}</h2></div>
         <p class="hint">{{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}</p>
+
+        @if (channelProgress(selectedCampaign).length > 0) {
+          <div class="goal-list">
+            @for (p of channelProgress(selectedCampaign); track p.channelId) {
+              <div class="goal-row">
+                <span class="slot-channel">{{ p.channelId }}</span>
+                <span class="goal-progress" [class.goal-met]="p.posted >= p.target">
+                  {{ p.posted }}/{{ p.target }} posted toward goal ({{ p.planned }} planned)
+                </span>
+              </div>
+            }
+          </div>
+        }
       </section>
 
       @if (nextOpenSlot(selectedCampaign); as next) {

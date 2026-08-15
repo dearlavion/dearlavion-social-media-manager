@@ -3,7 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
-import { Campaign, CampaignSlot, DEFAULT_STAGES, newCampaign, newSlot, nextOpenSlot } from './campaign.model';
+import {
+  Campaign,
+  CampaignSlot,
+  ChannelProgress,
+  DEFAULT_STAGES,
+  channelProgress,
+  newCampaign,
+  newSlot,
+  nextOpenSlot,
+} from './campaign.model';
 import { InboxPost, parseInboxTree } from './inbox-tree.util';
 
 type Mode = 'list' | 'builder' | 'detail';
@@ -41,6 +50,8 @@ export class CampaignComponent {
   draftStartDate = '';
   draftEndDate = '';
   draftChannelIds: string[] = [];
+  /** Target post count per channel, keyed by channel id -- set in step 3, alongside building the slot list. */
+  draftChannelTargets: Record<string, number> = {};
   draftSlots: CampaignSlot[] = [];
   newSlotStage = '';
   newSlotGuidance = '';
@@ -70,6 +81,14 @@ export class CampaignComponent {
     return `${posted}/${campaign.slots.length} posted`;
   }
 
+  channelProgress(campaign: Campaign): ChannelProgress[] {
+    return channelProgress(campaign);
+  }
+
+  slotCountForChannel(channelId: string): number {
+    return this.draftSlots.filter((s) => s.channelId === channelId).length;
+  }
+
   linkableInboxPosts(slot: CampaignSlot): InboxPost[] {
     const alreadyLinked = new Set(
       (this.selectedCampaign?.slots ?? [])
@@ -88,7 +107,8 @@ export class CampaignComponent {
     this.loading = true;
     try {
       const { campaigns, sha } = await this.github.loadCampaigns(this.connection, this.project.id);
-      this.campaigns = campaigns;
+      // Campaigns created before channelTargets existed won't have it on GitHub.
+      this.campaigns = campaigns.map((c) => ({ ...c, channelTargets: c.channelTargets ?? [] }));
       this.sha = sha;
       this.loaded = true;
       this.statusMessage = `Loaded ${campaigns.length} campaign(s).`;
@@ -144,6 +164,7 @@ export class CampaignComponent {
     this.draftStartDate = '';
     this.draftEndDate = '';
     this.draftChannelIds = [];
+    this.draftChannelTargets = {};
     this.draftSlots = [];
     this.resetNewSlotForm();
     this.statusMessage = '';
@@ -163,9 +184,15 @@ export class CampaignComponent {
   // --- builder wizard ---
 
   toggleDraftChannel(channelId: string): void {
-    this.draftChannelIds = this.draftChannelIds.includes(channelId)
+    const isSelected = this.draftChannelIds.includes(channelId);
+    this.draftChannelIds = isSelected
       ? this.draftChannelIds.filter((id) => id !== channelId)
       : [...this.draftChannelIds, channelId];
+    if (isSelected) {
+      delete this.draftChannelTargets[channelId];
+    } else {
+      this.draftChannelTargets[channelId] = 0;
+    }
     if (!this.newSlotChannelId && this.draftChannelIds.length > 0) {
       this.newSlotChannelId = this.draftChannelIds[0];
     }
@@ -217,6 +244,9 @@ export class CampaignComponent {
     campaign.startDate = this.draftStartDate || null;
     campaign.endDate = this.draftEndDate || null;
     campaign.slots = this.draftSlots;
+    campaign.channelTargets = this.draftChannelIds
+      .filter((channelId) => (this.draftChannelTargets[channelId] ?? 0) > 0)
+      .map((channelId) => ({ channelId, targetCount: this.draftChannelTargets[channelId] }));
 
     this.campaigns = [...this.campaigns, campaign];
     await this.save();

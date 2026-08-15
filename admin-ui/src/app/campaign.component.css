@@ -222,6 +222,49 @@ label {
   margin-bottom: 10px;
 }
 
+/* PER-CHANNEL GOALS */
+
+.goal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-bg);
+  flex-wrap: wrap;
+}
+
+.goal-input-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  text-transform: none;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.goal-input-label input {
+  width: 70px;
+}
+
+.goal-progress {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+}
+
+.goal-progress.goal-met {
+  color: var(--color-leaf);
+}
+
 .guidance-label {
   margin-bottom: 12px;
 }

@@ -52,6 +52,12 @@ export interface CampaignSlot {
   postedAt?: string;
 }
 
+/** How many posts you're aiming for on one channel over the life of a campaign -- purely informational, post.ts doesn't act on it. */
+export interface ChannelTarget {
+  channelId: string;
+  targetCount: number;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -60,6 +66,7 @@ export interface Campaign {
   endDate: string | null;
   createdAt: string;
   slots: CampaignSlot[];
+  channelTargets: ChannelTarget[];
 }
 
 export function inboxRoot(projectId: string): string {
@@ -219,6 +226,10 @@ function assertValidCampaign(projectId: string, value: unknown, index: number): 
       throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): invalid "status" "${s.status}"`);
     }
   });
+  // Older/hand-edited campaigns.json may predate this field -- normalized to [] below rather than required here.
+  if (c.channelTargets !== undefined && !Array.isArray(c.channelTargets)) {
+    throw new Error(`${path} (${c.id}): "channelTargets" must be an array when present`);
+  }
 }
 
 /** Most projects won't have a campaigns.json at all -- absent file means no campaigns, not an error. */
@@ -235,7 +246,7 @@ export async function loadCampaigns(projectId: string): Promise<Campaign[]> {
     throw new Error(`config/${projectId}/campaigns.json must contain a JSON array`);
   }
   parsed.forEach((c, i) => assertValidCampaign(projectId, c, i));
-  return parsed as Campaign[];
+  return (parsed as Campaign[]).map((c) => ({ ...c, channelTargets: c.channelTargets ?? [] }));
 }
 
 export async function saveCampaigns(projectId: string, campaigns: Campaign[]): Promise<void> {
