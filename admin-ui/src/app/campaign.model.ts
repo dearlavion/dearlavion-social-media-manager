@@ -120,3 +120,30 @@ export function channelProgress(campaign: Campaign): ChannelProgress[] {
     };
   });
 }
+
+export interface LinkedSlot {
+  campaign: Campaign;
+  slot: CampaignSlot;
+}
+
+/** Which campaign/slot (if any) a given inbox post path is already linked to -- the Content Queue side of the link. */
+export function findLinkedSlot(campaigns: Campaign[], postPath: string): LinkedSlot | undefined {
+  for (const campaign of campaigns) {
+    const slot = campaign.slots.find((s) => s.linkedPostPath === postPath);
+    if (slot) return { campaign, slot };
+  }
+  return undefined;
+}
+
+/** Slots not yet linked to anything, for a given channel, across every campaign -- candidates to link a queued post to. */
+export function openSlotsForChannel(campaigns: Campaign[], channelId: string): LinkedSlot[] {
+  const result: LinkedSlot[] = [];
+  for (const campaign of campaigns) {
+    for (const slot of campaign.slots) {
+      if (slot.channelId === channelId && slot.status === 'planned') {
+        result.push({ campaign, slot });
+      }
+    }
+  }
+  return result;
+}

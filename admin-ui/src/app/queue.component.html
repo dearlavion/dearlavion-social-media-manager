@@ -60,6 +60,25 @@
                     <span class="caption-preview">
                       {{ post.hasCustomCaption ? '✎ custom caption.txt' : (channel.captionTemplate || '(no caption template set)') }}
                     </span>
+
+                    @if (linkedSlotFor(post); as linked) {
+                      <span class="campaign-link-badge">
+                        🎯 {{ linked.campaign.name }} — {{ linked.slot.stage }}
+                      </span>
+                    } @else if (openSlotsFor(post).length > 0) {
+                      <div class="campaign-link-picker">
+                        @for (target of openSlotsFor(post); track target.slot.id) {
+                          <button
+                            type="button"
+                            class="btn-ghost"
+                            [disabled]="linking"
+                            (click)="linkToCampaign(target, post)"
+                          >
+                            Link to "{{ target.campaign.name }}: {{ target.slot.stage }}"
+                          </button>
+                        }
+                      </div>
+                    }
                   </div>
                   <div class="queue-item-eta">~{{ post.estimatedAt | date: 'MMM d, h:mm a' }}</div>
                 </div>

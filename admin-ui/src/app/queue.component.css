@@ -68,6 +68,13 @@ button:disabled {
   box-shadow: 0 6px 18px rgba(227, 139, 78, 0.28);
 }
 
+.btn-ghost {
+  color: var(--color-ink-soft);
+  background: transparent;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.76rem;
+}
+
 .hint {
   color: var(--color-ink-soft);
   font-size: 0.8rem;
@@ -163,6 +170,22 @@ button:disabled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.campaign-link-badge {
+  align-self: flex-start;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-coral-deep);
+  background: var(--tint-marigold);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.campaign-link-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 .queue-item-eta {

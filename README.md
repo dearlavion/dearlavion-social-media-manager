@@ -74,6 +74,8 @@ Workflows run on their cron schedule automatically — across every project in `
 
 **Content Queue** (admin UI, left menu) shows what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first, per channel — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit. Requires a project's channels to already be loaded on the Dashboard.
 
+**Connected to Campaigns**: loading the queue also loads the project's campaigns, so each post shows either a `🎯 <campaign> — <stage>` badge (already linked to a slot) or a **Link to "…"** button per open slot it could fulfil (for campaigns targeting that channel). Same link Campaigns' detail view creates — this is just the other side of it, so you can link from whichever view you happen to be looking at.
+
 ## Campaigns
 
 **Campaigns** (admin UI, left menu) plans a marketing push as an ordered sequence of post "slots" — each tagged with a funnel stage (awareness/consideration/conversion/loyalty, or a custom label), a channel, and guidance text on what that post should actually be — then tracks where each one really is, so campaign execution doesn't depend on memory.

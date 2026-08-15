@@ -131,6 +131,14 @@
     It fetches the whole <code>inbox/</code> tree in a single Git Trees API call instead of one request per post
     folder, to stay well under GitHub's 60/hr rate limit for unauthenticated requests.
   </p>
+  <p>
+    <strong>Loading the queue also loads the project's campaigns</strong>, so each post shows its campaign
+    connection: if it's already linked to a slot, a <code>🎯 Campaign — stage</code> badge appears instead of the
+    caption preview's usual spot; if it isn't linked yet but an open (<code>planned</code>) slot exists for that
+    channel in some campaign, a <strong>Link to "…"</strong> button appears for each candidate slot. This is the
+    same link Campaigns' own detail view creates (see below) — just reachable from whichever side you're looking
+    at. Clicking it needs a token, same as any other save.
+  </p>
 
   <h1>Using Campaigns</h1>
   <p class="intro">
