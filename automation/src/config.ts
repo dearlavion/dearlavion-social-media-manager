@@ -58,10 +58,14 @@ export interface ChannelTarget {
   targetCount: number;
 }
 
+/** The campaign's own lifecycle stage -- set by hand in the admin UI, purely informational, post.ts doesn't act on it. */
+export type CampaignStatus = 'open' | 'ongoing' | 'done';
+
 export interface Campaign {
   id: string;
   name: string;
   goal: string;
+  status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
@@ -226,9 +230,12 @@ function assertValidCampaign(projectId: string, value: unknown, index: number): 
       throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): invalid "status" "${s.status}"`);
     }
   });
-  // Older/hand-edited campaigns.json may predate this field -- normalized to [] below rather than required here.
+  // Older/hand-edited campaigns.json may predate these fields -- normalized below rather than required here.
   if (c.channelTargets !== undefined && !Array.isArray(c.channelTargets)) {
     throw new Error(`${path} (${c.id}): "channelTargets" must be an array when present`);
+  }
+  if (c.status !== undefined && !['open', 'ongoing', 'done'].includes(c.status)) {
+    throw new Error(`${path} (${c.id}): invalid "status" "${c.status}"`);
   }
 }
 
@@ -246,7 +253,7 @@ export async function loadCampaigns(projectId: string): Promise<Campaign[]> {
     throw new Error(`config/${projectId}/campaigns.json must contain a JSON array`);
   }
   parsed.forEach((c, i) => assertValidCampaign(projectId, c, i));
-  return (parsed as Campaign[]).map((c) => ({ ...c, channelTargets: c.channelTargets ?? [] }));
+  return (parsed as Campaign[]).map((c) => ({ ...c, channelTargets: c.channelTargets ?? [], status: c.status ?? 'open' }));
 }
 
 export async function saveCampaigns(projectId: string, campaigns: Campaign[]): Promise<void> {

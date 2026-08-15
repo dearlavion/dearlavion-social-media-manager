@@ -1,5 +1,10 @@
 export type CampaignSlotStatus = 'planned' | 'queued' | 'posted';
 
+/** The campaign's own lifecycle stage -- set by hand, independent of slot progress. */
+export type CampaignStatus = 'open' | 'ongoing' | 'done';
+
+export const CAMPAIGN_STATUSES: CampaignStatus[] = ['open', 'ongoing', 'done'];
+
 /**
  * One planned post within a Campaign's ordered sequence. `linkedPostPath`
  * is a repo-relative path (e.g. "inbox/travel-besty/ig-main/<postId>") set
@@ -27,6 +32,7 @@ export interface Campaign {
   id: string;
   name: string;
   goal: string;
+  status: CampaignStatus;
   startDate: string | null;
   endDate: string | null;
   createdAt: string;
@@ -59,6 +65,7 @@ export function newCampaign(name: string, goal: string): Campaign {
     id: crypto.randomUUID(),
     name,
     goal,
+    status: 'open',
     startDate: null,
     endDate: null,
     createdAt: new Date().toISOString(),

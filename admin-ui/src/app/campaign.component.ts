@@ -4,8 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 import {
+  CAMPAIGN_STATUSES,
   Campaign,
   CampaignSlot,
+  CampaignStatus,
   ChannelProgress,
   DEFAULT_STAGES,
   channelProgress,
@@ -31,6 +33,7 @@ export class CampaignComponent {
   @Input() channelsLoaded = false;
 
   readonly defaultStages = DEFAULT_STAGES;
+  readonly campaignStatuses = CAMPAIGN_STATUSES;
 
   mode: Mode = 'list';
   campaigns: Campaign[] = [];
@@ -65,6 +68,11 @@ export class CampaignComponent {
   // Editing an existing campaign's per-channel goal, in detail mode
   editingGoalChannelId: string | null = null;
   editingGoalValue = 0;
+
+  // Editing an existing campaign's dates, in detail mode
+  editingDates = false;
+  editingStartDate = '';
+  editingEndDate = '';
 
   constructor(private readonly github: GithubService) {}
 
@@ -111,8 +119,12 @@ export class CampaignComponent {
     this.loading = true;
     try {
       const { campaigns, sha } = await this.github.loadCampaigns(this.connection, this.project.id);
-      // Campaigns created before channelTargets existed won't have it on GitHub.
-      this.campaigns = campaigns.map((c) => ({ ...c, channelTargets: c.channelTargets ?? [] }));
+      // Campaigns created before channelTargets/status existed won't have them on GitHub.
+      this.campaigns = campaigns.map((c) => ({
+        ...c,
+        channelTargets: c.channelTargets ?? [],
+        status: c.status ?? 'open',
+      }));
       this.sha = sha;
       this.loaded = true;
       this.statusMessage = `Loaded ${campaigns.length} campaign(s).`;
@@ -181,6 +193,7 @@ export class CampaignComponent {
     this.statusMessage = '';
     this.errorMessage = '';
     this.editingGoalChannelId = null;
+    this.editingDates = false;
     if (!this.inboxLoaded) {
       void this.loadInbox();
     }
@@ -302,6 +315,36 @@ export class CampaignComponent {
     }
 
     this.editingGoalChannelId = null;
+    await this.save();
+  }
+
+  // --- detail: editing an existing campaign's status and dates ---
+
+  async updateStatus(status: CampaignStatus): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    campaign.status = status;
+    await this.save();
+  }
+
+  startEditDates(): void {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    this.editingStartDate = campaign.startDate ?? '';
+    this.editingEndDate = campaign.endDate ?? '';
+    this.editingDates = true;
+  }
+
+  cancelEditDates(): void {
+    this.editingDates = false;
+  }
+
+  async saveEditDates(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    campaign.startDate = this.editingStartDate || null;
+    campaign.endDate = this.editingEndDate || null;
+    this.editingDates = false;
     await this.save();
   }
 }

@@ -49,7 +49,10 @@
           <div class="campaign-cards">
             @for (campaign of campaigns; track campaign.id) {
               <button type="button" class="campaign-card" (click)="openDetail(campaign.id)">
-                <div class="campaign-card-name">{{ campaign.name }}</div>
+                <div class="campaign-card-top">
+                  <div class="campaign-card-name">{{ campaign.name }}</div>
+                  <span class="campaign-status-badge" [class]="'status-' + campaign.status">{{ campaign.status }}</span>
+                </div>
                 <div class="campaign-card-goal">{{ campaign.goal || 'No goal set' }}</div>
                 <div class="campaign-card-progress">{{ progressLabel(campaign) }}</div>
               </button>
@@ -213,6 +216,29 @@
       <section class="card">
         <div class="card-header"><h2>{{ selectedCampaign.name }}</h2></div>
         <p class="hint">{{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}</p>
+
+        <div class="meta-row">
+          <label class="status-select-label">
+            Status
+            <select [ngModel]="selectedCampaign.status" (ngModelChange)="updateStatus($event)">
+              @for (s of campaignStatuses; track s) {
+                <option [value]="s">{{ s }}</option>
+              }
+            </select>
+          </label>
+
+          @if (!editingDates) {
+            <span class="dates-display">
+              {{ selectedCampaign.startDate || 'no start date' }} → {{ selectedCampaign.endDate || 'no end date' }}
+            </span>
+            <button type="button" class="btn-ghost" (click)="startEditDates()">Edit dates</button>
+          } @else {
+            <input type="date" [(ngModel)]="editingStartDate" />
+            <input type="date" [(ngModel)]="editingEndDate" />
+            <button type="button" class="btn-ghost" (click)="saveEditDates()" [disabled]="saving">Save</button>
+            <button type="button" class="btn-ghost" (click)="cancelEditDates()">Cancel</button>
+          }
+        </div>
 
         @if (channelProgress(selectedCampaign).length > 0) {
           <div class="goal-list">
