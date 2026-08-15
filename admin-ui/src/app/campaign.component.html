@@ -308,7 +308,7 @@
       }
 
       <section class="card">
-        <div class="card-header"><h2>All slots</h2></div>
+        <div class="card-header"><h2>All posts</h2></div>
         <ol class="slot-list">
           @for (slot of selectedCampaign.slots; track slot.id) {
             <li class="slot-row">
@@ -318,6 +318,7 @@
               <span class="status-badge" [class.queued]="slot.status === 'queued'" [class.posted]="slot.status === 'posted'">
                 {{ slot.status }}
               </span>
+              <button type="button" class="btn-ghost" (click)="editInContentQueue.emit()">Edit</button>
             </li>
           }
         </ol>

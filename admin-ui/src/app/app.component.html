@@ -60,6 +60,7 @@
         [project]="selectedProject ?? null"
         [channels]="channels"
         [channelsLoaded]="loaded"
+        (editInContentQueue)="view = 'queue'"
       ></app-campaign>
     } @else if (view === 'setup') {
       <header class="topbar">

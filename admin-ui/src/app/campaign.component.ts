@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project } from './channel.model';
@@ -31,6 +31,9 @@ export class CampaignComponent {
   @Input() project: Project | null = null;
   @Input() channels: ChannelConfig[] = [];
   @Input() channelsLoaded = false;
+
+  /** A post's Edit button doesn't edit inline here -- Content Queue's "Planned" section is where that happens. */
+  @Output() editInContentQueue = new EventEmitter<void>();
 
   readonly defaultStages = DEFAULT_STAGES;
   readonly campaignStatuses = CAMPAIGN_STATUSES;
