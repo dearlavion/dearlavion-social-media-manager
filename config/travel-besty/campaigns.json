@@ -1,0 +1,19 @@
+[
+  {
+    "id": "6e8475a0-9605-4985-bd25-baca9c7c1522",
+    "name": "BKK Launch",
+    "goal": "Grow instagram",
+    "startDate": "2026-08-16",
+    "endDate": "2026-08-31",
+    "createdAt": "2026-08-15T03:58:33.958Z",
+    "slots": [
+      {
+        "id": "13d7bc91-9865-49e9-942f-88bdcab6e39e",
+        "stage": "awareness",
+        "guidance": "Reach people who don’t know you yet -- lead with a relatable pain point or hook, no pitch yet.",
+        "channelId": "travel-besty-instagram",
+        "status": "planned"
+      }
+    ]
+  }
+]
