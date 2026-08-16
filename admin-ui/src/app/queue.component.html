@@ -120,7 +120,7 @@
                       </label>
                       @if (editingPlannedTargetDate && editingPlannedTargetTime) {
                         <p class="hint">
-                          Scheduled — the hourly scheduled-posts run will publish this automatically once media is
+                          Scheduled — the scheduled-posts run (every 5 min) will publish this automatically once media is
                           linked, or notify you once if it isn't yet.
                           @if (editingPlannedExpectedFileName.trim()) {
                             It'll first look for a file named exactly "{{ editingPlannedExpectedFileName.trim() }}"
@@ -212,7 +212,7 @@
               </div>
               @if (newPlannedTargetDate && newPlannedTargetTime) {
                 <p class="hint">
-                  Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked,
+                  Scheduled — the scheduled-posts run (every 5 min) will publish this automatically once media is linked,
                   or notify you once if it isn't yet.
                   @if (newPlannedExpectedFileName.trim()) {
                     It'll first look for a file named exactly "{{ newPlannedExpectedFileName.trim() }}" (already

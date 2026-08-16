@@ -3,7 +3,10 @@ name: 📅 Scheduled posts
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 * * * *' # every hour, 45 min past (offset from sync-drive/post/reminders)
+    # Every 5 min, not hourly like the other workflows -- this is the one that
+    # actually has to notice a specific target *time* passing (or fail to find
+    # media and notify), so it stays close to real-time. Free on a public repo.
+    - cron: '*/5 * * * *'
 
 permissions:
   contents: write

@@ -179,7 +179,8 @@
   <h2>How it works</h2>
   <ol>
     <li>
-      <code>.github/workflows/scheduled-posts.yml</code> runs hourly. Once a slot's target date+time has passed:
+      <code>.github/workflows/scheduled-posts.yml</code> runs every 5 minutes (unlike the other workflows, which are
+      hourly). Once a slot's target date+time has passed:
     </li>
     <li>
       If media is already linked (<strong>Link media</strong> / <strong>Link to "…"</strong>) — it publishes that
@@ -226,8 +227,10 @@
   </p>
   <h2>Precision</h2>
   <p>
-    Same caveat as the Scheduler: this checks once an hour, so a target time can be acted on up to ~1 hour late,
-    not to the minute.
+    Unlike the Scheduler and the other workflows (hourly), this one checks <strong>every 5 minutes</strong> — a
+    target time gets acted on (published, or notified as missing media) within a few minutes, not up to an hour
+    late. GitHub's failure-email notification itself is immediate once a check run actually fails; the only real
+    wait is for that next 5-minute check to happen.
   </p>
 
   <h1>Using Campaigns</h1>

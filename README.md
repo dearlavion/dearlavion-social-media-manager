@@ -11,7 +11,7 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
 2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new top-level entries in its configured Google Drive folder. A loose image/video file becomes one post; a **subfolder** becomes a carousel post from everything inside it (up to Instagram's 10-item cap). Each becomes its own post folder — `inbox/<projectId>/<channelId>/<postId>/<file(s)>` — committed into the repo. Any single file over ~90MB is skipped (logged clearly) to stay under GitHub's 100MB push limit.
 3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`. Skips any folder reserved by a not-yet-due scheduled post (see below).
-4. **Scheduled posts** (`.github/workflows/scheduled-posts.yml`, hourly, offset 45 min after sync): publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval — see [Scheduled posts](#scheduled-posts).
+4. **Scheduled posts** (`.github/workflows/scheduled-posts.yml`, every 5 min): publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval — see [Scheduled posts](#scheduled-posts).
 5. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
 
 ### Why Buffer instead of each platform's API directly
@@ -98,7 +98,7 @@ This is a planning/tracking layer on top of the existing due-check engine — fo
 
 ## Scheduled posts
 
-Setting **both** a target date and a target time on a Planned post (Content Queue) turns it into a real scheduled post, handled by `.github/workflows/scheduled-posts.yml` (hourly, offset from sync-drive/post/reminders). Once that date+time has passed:
+Setting **both** a target date and a target time on a Planned post (Content Queue) turns it into a real scheduled post, handled by `.github/workflows/scheduled-posts.yml` (every 5 minutes, unlike the other hourly workflows). Once that date+time has passed:
 
 - **Media linked** (`status: "queued"`) — `scheduled-posts.ts` publishes that specific post immediately, via the same publish pipeline `post.ts` uses, then marks the slot `posted`. This bypasses the channel's usual oldest-file-first queue entirely — it's not "wait your turn," it's "go now."
 - **Not linked, but an `expectedFileName` is set** — before giving up, `scheduled-posts.ts` looks for a file with that *exact* name: first among this channel's already-synced-but-unclaimed `inbox/` folders, then (if not found there) live in the channel's Drive folder itself, downloading it directly if found. Either way, once matched it links and publishes immediately, same as above. This is how you can name a file when planning the post, upload it to Drive whenever, and have it get picked up and posted automatically at the scheduled time without ever touching Content Queue again.
@@ -110,7 +110,7 @@ Setting **both** a target date and a target time on a Planned post (Content Queu
 
 **Why the regular hourly `post.yml` won't "steal" a scheduled post early:** a post folder linked to a slot with a future target time is treated as reserved — `post.ts`'s normal oldest-file-first pick skips it and falls through to the next unreserved folder (or does nothing, if that was the only one waiting). Once the target time passes, the reservation lifts and it becomes fair game for the regular flow too, in case `scheduled-posts.yml` missed it for some reason.
 
-**Precision:** like Scheduler, this is hourly-cron precision — a target time can be acted on up to ~1h after it passes, not to the minute.
+**Precision:** unlike the other workflows (hourly), `scheduled-posts.yml` runs every 5 minutes — a target time is acted on (published, or notified as missing media) within a few minutes of passing, not up to an hour late. GitHub's own failure-email notification fires immediately once that check run actually fails, so the only real delay is the up-to-~5-minute wait for the next check itself.
 
 ## Scheduler (personal reminders)
 
