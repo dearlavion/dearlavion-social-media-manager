@@ -1,0 +1,96 @@
+<div class="settings-page">
+  <header class="topbar">
+    <div class="greeting">
+      <h1>Settings</h1>
+      <p>
+        Controls how often each GitHub Actions workflow runs. Edits go straight to the workflow's YAML file on
+        <strong>{{ connection.branch }}</strong> via the same repo connection as everything else -- no need to touch
+        the files by hand.
+      </p>
+    </div>
+  </header>
+
+  @if (!loaded) {
+    <section class="card">
+      <div class="card-header"><h2>Workflow schedules</h2></div>
+      <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading…' : 'Load schedules' }}
+      </button>
+      <p class="hint">Uses the repo connection set on Dashboard/Set Up. Works with no token.</p>
+    </section>
+  }
+
+  @if (statusMessage) {
+    <p class="status">{{ statusMessage }}</p>
+  }
+  @if (errorMessage) {
+    <p class="error">{{ errorMessage }}</p>
+  }
+
+  @if (loaded) {
+    @for (wf of workflows; track wf.config.file) {
+      <section class="card workflow-card">
+        <div class="card-header workflow-header">
+          <div>
+            <h2>{{ wf.config.label }}</h2>
+            <p class="workflow-file">{{ wf.config.file }}</p>
+          </div>
+          <span class="current-cron">{{ describeCron(wf) }}</span>
+        </div>
+        <p class="workflow-description">{{ wf.config.description }}</p>
+
+        @if (!wf.parsed) {
+          <p class="hint">
+            This file's schedule doesn't match a pattern this page knows how to edit safely (raw:
+            <code>{{ wf.currentCron ?? 'not found' }}</code>). Edit it directly in the repo if it needs to change.
+          </p>
+        } @else {
+          <div class="schedule-editor">
+            @if (wf.parsed.pattern === 'hourlyAtMinute') {
+              <label class="schedule-field">
+                Minute past the hour
+                <input type="number" min="0" max="59" [(ngModel)]="wf.editValue" />
+              </label>
+            } @else {
+              <label class="schedule-field">
+                Interval
+                <select [(ngModel)]="wf.editValue">
+                  @for (n of everyNMinutesOptions; track n) {
+                    <option [ngValue]="n">Every {{ n }} minute{{ n === 1 ? '' : 's' }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            <button type="button" class="btn-secondary" (click)="triggerNow(wf)" [disabled]="!!savingFile || !!triggeringFile">
+              {{ triggeringFile === wf.config.file ? 'Triggering…' : 'Trigger now' }}
+            </button>
+            <button type="button" class="btn-primary" (click)="save(wf)" [disabled]="!!savingFile || !!triggeringFile">
+              {{ savingFile === wf.config.file ? 'Saving…' : 'Save schedule' }}
+            </button>
+          </div>
+
+          @if (minuteCollisions(wf); as collisions) {
+            @if (collisions.length > 0) {
+              <p class="hint collision-hint">
+                Heads up: {{ collisions.join(', ') }} {{ collisions.length === 1 ? 'is' : 'are' }} also set to :{{
+                  padMinute(wf.editValue)
+                }} past the hour. Both commit their own results around the same time, which can occasionally collide
+                -- not a hard problem, just worth knowing.
+              </p>
+            }
+          }
+        }
+      </section>
+    }
+
+    <p class="hint">
+      "Trigger now" runs the workflow immediately (same as clicking "Run workflow" on the Actions tab) without
+      changing its schedule. Needs a token with the <strong>Actions: read and write</strong> permission, in addition
+      to Contents.
+      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
+        View runs on GitHub →
+      </a>
+    </p>
+  }
+</div>

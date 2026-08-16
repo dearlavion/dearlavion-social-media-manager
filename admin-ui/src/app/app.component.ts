@@ -7,13 +7,22 @@ import { WikiComponent } from './wiki.component';
 import { SchedulerComponent } from './scheduler.component';
 import { QueueComponent } from './queue.component';
 import { CampaignComponent } from './campaign.component';
+import { SettingsComponent } from './settings.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, WikiComponent, SchedulerComponent, QueueComponent, CampaignComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    WikiComponent,
+    SchedulerComponent,
+    QueueComponent,
+    CampaignComponent,
+    SettingsComponent,
+  ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
 })
@@ -22,7 +31,7 @@ export class AppComponent implements OnInit {
   readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
-  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' | 'campaigns' = 'dashboard';
+  view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' | 'campaigns' | 'settings' = 'dashboard';
 
   /** Off-canvas sidebar state on mobile -- irrelevant/unused above the 700px breakpoint. */
   mobileMenuOpen = false;

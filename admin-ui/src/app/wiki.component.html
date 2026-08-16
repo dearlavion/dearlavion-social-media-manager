@@ -170,7 +170,7 @@
     All of the above needs a token, same as any other save on this page.
   </p>
 
-  <h1>Using Scheduled posts</h1>
+  <h1 id="scheduled-posts">Using Scheduled posts</h1>
   <p class="intro">
     Setting <strong>both</strong> a target date and a target time on a Planned post turns it into a real scheduled
     post — this is the one case where a campaign slot actually drives when something publishes, rather than just
@@ -329,5 +329,50 @@
     Also check <a href="https://github.com/settings/notifications" target="_blank" rel="noopener">github.com/settings/notifications</a>
     → the <strong>Actions</strong> section has email notifications enabled (usually on by default for repos you
     own) — otherwise GitHub won't email you about the failure at all.
+  </p>
+
+  <h1 id="settings">Using Settings (workflow schedules)</h1>
+  <p class="intro">
+    <strong>Settings</strong> (left menu) controls how often <code>sync-drive.yml</code>, <code>post.yml</code>,
+    <code>reminders.yml</code>, and <code>scheduled-posts.yml</code> run. There's no separate GitHub API for a
+    workflow's schedule — it lives as a <code>cron:</code> line inside that workflow's own YAML file on
+    <code>main</code> — so this page reads that file, lets you change the schedule, and commits it straight back,
+    the same way every other Save button in this app edits a file on GitHub.
+  </p>
+
+  <h2>How it works</h2>
+  <ol>
+    <li><strong>Load schedules</strong> reads all four workflow files and shows each one's current cron as plain English (e.g. "Every hour, at :15" or "Every 5 minutes").</li>
+    <li>
+      The three hourly workflows show a <strong>minute past the hour</strong> field (0–59).
+      <code>scheduled-posts.yml</code> shows an <strong>interval</strong> dropdown instead, since it polls every
+      few minutes rather than firing once an hour — see <a href="#scheduled-posts">Scheduled posts</a>.
+    </li>
+    <li><strong>Save schedule</strong> commits just that one change to the workflow file — everything else in it (secrets, steps, triggers) is left untouched.</li>
+    <li><strong>Trigger now</strong> runs that workflow immediately (same as clicking "Run workflow" on GitHub's Actions tab) without changing its schedule at all — handy for testing a new interval right away instead of waiting for it.</li>
+  </ol>
+
+  <h2>Why the three hourly ones default to different minutes</h2>
+  <p>
+    <code>sync-drive</code>, <code>post</code>, and <code>reminders</code> ship offset from each other (<code>:00</code>,
+    <code>:15</code>, <code>:30</code>) on purpose — each run ends with an auto-commit (synced media, moved post
+    folders, or a notified reminder), and two workflows committing around the same moment can occasionally collide.
+    Setting two of them to the same minute here shows a small heads-up under both cards — it's not blocked, just
+    flagged, since an occasional collision on a personal-scale repo is a minor inconvenience, not a real problem.
+  </p>
+
+  <h2>If a schedule looks read-only</h2>
+  <p>
+    This page only recognizes the two cron shapes actually used in this repo (an hourly minute, or an
+    every-N-minutes interval). If a workflow file were ever hand-edited into some other cron expression, its card
+    shows the raw value instead of an editable field, rather than risk saving something mangled. Edit that one
+    directly in the repo if it ever needs to change.
+  </p>
+
+  <h2>Permissions</h2>
+  <p>
+    <strong>Save schedule</strong> needs the same <strong>Contents: read and write</strong> token as every other
+    Save button in this app. <strong>Trigger now</strong> additionally needs <strong>Actions: read and write</strong>,
+    since it calls a different GitHub API to dispatch a run.
   </p>
 </div>

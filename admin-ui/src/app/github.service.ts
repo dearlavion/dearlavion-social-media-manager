@@ -139,6 +139,29 @@ export class GithubService {
     return this.putFile(conn, campaignsPath(projectId), campaigns, sha, 'chore: update campaigns');
   }
 
+  /** Raw text read/write for non-JSON files (workflow YAML) -- everything else in this service assumes JSON. */
+  async loadRawFile(conn: GithubConnection, path: string): Promise<{ content: string; sha: string }> {
+    const res = await fetch(this.contentsUrl(conn, path), { headers: this.headers(conn) });
+    if (!res.ok) {
+      throw new Error(`GitHub API error loading ${path}: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { content: string; sha: string };
+    return { content: base64ToUtf8(body.content), sha: body.sha };
+  }
+
+  async saveRawFile(conn: GithubConnection, path: string, content: string, sha: string, message: string): Promise<string> {
+    const res = await fetch(this.contentsUrl(conn, path), {
+      method: 'PUT',
+      headers: { ...this.headers(conn), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, content: utf8ToBase64(content), branch: conn.branch, sha }),
+    });
+    if (!res.ok) {
+      throw new Error(`GitHub API error saving ${path}: ${res.status} ${await res.text()}`);
+    }
+    const body = (await res.json()) as { content: { sha: string } };
+    return body.content.sha;
+  }
+
   async loadChannels(
     conn: GithubConnection,
     projectId: string,

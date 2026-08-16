@@ -37,6 +37,9 @@
       <button type="button" class="nav-link" [class.active]="view === 'setup'" (click)="setView('setup')">
         <span class="nav-icon">⚙</span><span>Set Up</span>
       </button>
+      <button type="button" class="nav-link" [class.active]="view === 'settings'" (click)="setView('settings')">
+        <span class="nav-icon">⏱</span><span>Settings</span>
+      </button>
       <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="setView('wiki')">
         <span class="nav-icon">📖</span><span>Wiki</span>
       </button>
@@ -76,6 +79,8 @@
         [channelsLoaded]="loaded"
         (editInContentQueue)="view = 'queue'"
       ></app-campaign>
+    } @else if (view === 'settings') {
+      <app-settings [connection]="connection"></app-settings>
     } @else if (view === 'setup') {
       <header class="topbar">
         <div class="greeting">

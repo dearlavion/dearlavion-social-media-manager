@@ -118,6 +118,16 @@ Setting **both** a target date and a target time on a Planned post (Content Queu
 
 The real limitation: GitHub doesn't let a workflow put custom text into that notification email's body, only a link to the run — the actual message is the first line of the failed run's **Check reminders** step log. Confirm **[github.com/settings/notifications](https://github.com/settings/notifications) → Actions** has failure emails enabled (usually on by default for repos you own).
 
+## Settings (workflow schedules)
+
+**Settings** (admin UI, left menu) edits how often `sync-drive.yml`, `post.yml`, `reminders.yml`, and `scheduled-posts.yml` actually run — no need to hand-edit YAML in the repo. There's no separate API for a workflow's cron; the schedule lives in a `cron:` line inside each workflow file on `main`, so **Save schedule** reads that file's raw text, swaps in the new cron expression, and commits it straight back via the same GitHub Contents API every other Save button in this app uses.
+
+- The three hourly workflows (`sync-drive`, `post`, `reminders`) each show a **minute-past-the-hour** number input (0–59) — they're intentionally offset from each other (`:00`/`:15`/`:30`) so their auto-commits don't land in the same push and race each other. Setting two to the same minute shows a non-blocking heads-up, not a hard block.
+- `scheduled-posts.yml` shows an **interval** dropdown (every 1/5/10/15/20/30/60 minutes) instead, since it polls rather than firing once an hour — see [Scheduled posts](#scheduled-posts).
+- **Trigger now** runs that workflow immediately (same as "Run workflow" on the Actions tab) without touching its schedule — useful for testing a new interval without waiting for it.
+- If a workflow's `cron:` line were ever hand-edited into some other shape, its card falls back to a read-only display of the raw expression rather than risk mangling something this page doesn't understand.
+- **Save schedule** needs the same **Contents: read and write** token as any other Save button here; **Trigger now** additionally needs **Actions: read and write**.
+
 ## Local development / dry runs
 
 Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or Buffer — useful for checking the due-check/file-picking logic without live credentials. They loop over every project in `config/projects.json` unless scoped:
