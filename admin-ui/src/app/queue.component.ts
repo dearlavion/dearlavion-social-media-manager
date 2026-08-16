@@ -9,6 +9,7 @@ import {
   CampaignSlot,
   DEFAULT_STAGES,
   LinkedSlot,
+  campaignDateOptions,
   findLinkedSlot,
   newSlot,
   openSlotsForChannel,
@@ -48,11 +49,13 @@ export class QueueComponent {
   newPlannedCampaignId = '';
   newPlannedStage = '';
   newPlannedGuidance = '';
+  newPlannedTargetDate = '';
 
   // Editing an existing planned post inline.
   editingPlannedSlotId: string | null = null;
   editingPlannedStage = '';
   editingPlannedGuidance = '';
+  editingPlannedTargetDate = '';
 
   constructor(private readonly github: GithubService) {}
 
@@ -82,6 +85,11 @@ export class QueueComponent {
 
   plannedFor(channelId: string): LinkedSlot[] {
     return openSlotsForChannel(this.campaigns, channelId);
+  }
+
+  dateOptionsForCampaign(campaignId: string): string[] {
+    const campaign = this.campaigns.find((c) => c.id === campaignId);
+    return campaign ? campaignDateOptions(campaign) : [];
   }
 
   async load(): Promise<void> {
@@ -130,6 +138,7 @@ export class QueueComponent {
     this.newPlannedCampaignId = this.campaigns[0]?.id ?? '';
     this.newPlannedStage = '';
     this.newPlannedGuidance = '';
+    this.newPlannedTargetDate = '';
   }
 
   cancelAddPlanned(): void {
@@ -145,7 +154,9 @@ export class QueueComponent {
     const stage = this.newPlannedStage.trim();
     const campaign = this.campaigns.find((c) => c.id === this.newPlannedCampaignId);
     if (!stage || !campaign) return;
-    campaign.slots = [...campaign.slots, newSlot(stage, this.newPlannedGuidance.trim(), channelId)];
+    const slot = newSlot(stage, this.newPlannedGuidance.trim(), channelId);
+    if (this.newPlannedTargetDate) slot.targetDate = this.newPlannedTargetDate;
+    campaign.slots = [...campaign.slots, slot];
     this.addingPlannedForChannel = null;
     await this.saveCampaigns();
   }
@@ -156,6 +167,7 @@ export class QueueComponent {
     this.editingPlannedSlotId = slot.id;
     this.editingPlannedStage = slot.stage;
     this.editingPlannedGuidance = slot.guidance;
+    this.editingPlannedTargetDate = slot.targetDate ?? '';
   }
 
   cancelEditPlanned(): void {
@@ -167,6 +179,7 @@ export class QueueComponent {
     if (!stage) return;
     slot.stage = stage;
     slot.guidance = this.editingPlannedGuidance.trim();
+    slot.targetDate = this.editingPlannedTargetDate || undefined;
     this.editingPlannedSlotId = null;
     await this.saveCampaigns();
   }

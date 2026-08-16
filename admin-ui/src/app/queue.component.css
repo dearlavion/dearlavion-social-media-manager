@@ -327,6 +327,21 @@ label {
   color: white;
 }
 
+.target-date-badge {
+  align-self: flex-start;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: var(--tint-cream);
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.target-date-label {
+  max-width: 220px;
+}
+
 .planned-item-actions {
   display: flex;
   gap: 4px;

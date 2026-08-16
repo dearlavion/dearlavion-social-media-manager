@@ -50,6 +50,8 @@ export interface CampaignSlot {
   status: 'planned' | 'queued' | 'posted';
   /** Content-creation checklist state, set in the admin UI -- purely informational, post.ts doesn't act on it. */
   prepStatus?: 'todo' | 'done';
+  /** YYYY-MM-DD, set in the admin UI -- purely informational, doesn't gate posting or affect scheduling. */
+  targetDate?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }

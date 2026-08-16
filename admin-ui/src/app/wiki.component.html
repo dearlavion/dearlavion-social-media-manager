@@ -144,8 +144,15 @@
   </p>
   <ul>
     <li><strong>+ Add planned post</strong> — pick which ongoing campaign it belongs to, a stage (quick-pick or
-      your own), and guidance — creates a new slot on that campaign directly, without going through the builder.</li>
-    <li><strong>Edit</strong> a planned post's stage/guidance inline, or <strong>Remove</strong> it entirely.</li>
+      your own), guidance, and optionally a <strong>target date</strong> — creates a new slot on that campaign
+      directly, without going through the builder.</li>
+    <li><strong>Edit</strong> a planned post's stage/guidance/target date inline, or <strong>Remove</strong> it entirely.</li>
+    <li>
+      The <strong>target date</strong> dropdown is populated from that post's campaign — every day from its
+      start to end date if both are set (e.g. "Sun, Aug 16"), or the next 30 days from today if the campaign has
+      no dates. It's purely a planning label shown as a <code>📅 date</code> badge on the row — nothing enforces
+      it or uses it to decide when a post actually goes out; that's still <code>intervalHours</code> and the cron.
+    </li>
     <li>
       Toggle its <strong>todo / done</strong> chip — a content-<em>creation</em> checklist ("have I actually made
       this yet"), separate from the slot's real publish lifecycle (<code>planned</code> → <code>queued</code> →

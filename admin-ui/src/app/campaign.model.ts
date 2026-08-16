@@ -1,5 +1,12 @@
 export type CampaignSlotStatus = 'planned' | 'queued' | 'posted';
 
+function toDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 /** Whether the content for a planned slot has actually been created yet -- independent of publish lifecycle. */
 export type PrepStatus = 'todo' | 'done';
 
@@ -23,6 +30,8 @@ export interface CampaignSlot {
   status: CampaignSlotStatus;
   /** Content-creation checklist state -- "have I actually made this yet", separate from `status`. Defaults to "todo". */
   prepStatus?: PrepStatus;
+  /** YYYY-MM-DD -- when you're aiming to actually publish this one. Informational only, doesn't gate posting. */
+  targetDate?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }
@@ -93,6 +102,35 @@ export function newSlot(stage: string, guidance: string, channelId: string): Cam
 /** The first slot not yet posted, in order -- "what to do next" for a campaign. */
 export function nextOpenSlot(campaign: Campaign): CampaignSlot | undefined {
   return campaign.slots.find((s) => s.status !== 'posted');
+}
+
+const MAX_DATE_OPTIONS = 90;
+
+/**
+ * Every day from a campaign's startDate to endDate inclusive, for a "target
+ * date to post" dropdown -- falls back to the next 30 days from today when
+ * the campaign has no dates set. Capped at 90 options for sanity.
+ */
+export function campaignDateOptions(campaign: Campaign): string[] {
+  let start: Date;
+  let end: Date;
+  if (campaign.startDate && campaign.endDate) {
+    start = new Date(`${campaign.startDate}T00:00:00`);
+    end = new Date(`${campaign.endDate}T00:00:00`);
+  } else {
+    start = new Date();
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start);
+    end.setDate(end.getDate() + 30);
+  }
+
+  const dates: string[] = [];
+  const cursor = new Date(start);
+  while (cursor.getTime() <= end.getTime() && dates.length < MAX_DATE_OPTIONS) {
+    dates.push(toDateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
 }
 
 export interface ChannelProgress {
