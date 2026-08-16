@@ -62,6 +62,8 @@ export interface CampaignSlot {
   targetDueAt?: string;
   /** Set once scheduled-posts.ts has notified about this slot being due with no media linked, so it doesn't repeat every run. */
   scheduledNotifiedAt?: string;
+  /** Exact Drive filename this slot is waiting for -- only acted on by scheduled-posts.ts, and only alongside targetDueAt. */
+  expectedFileName?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }

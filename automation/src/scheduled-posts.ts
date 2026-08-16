@@ -1,20 +1,79 @@
 import { appendFileSync } from 'node:fs';
+import { readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { REPO_ROOT, loadProjects, loadChannels, saveChannels, loadCampaigns, saveCampaigns } from './config.js';
+import {
+  REPO_ROOT,
+  loadProjects,
+  loadChannels,
+  saveChannels,
+  loadCampaigns,
+  saveCampaigns,
+  inboxRoot,
+  repoRelativePath,
+} from './config.js';
+import type { Campaign } from './config.js';
 import { getPublisher } from './publishers/index.js';
 import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
+import { findFileByName } from './drive.js';
+import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
 
 /**
  * Runs alongside (not instead of) post.ts's interval-based FIFO posting.
  * A campaign slot only participates here once it has a `targetDueAt`
  * (admin UI sets this when both a target date *and* time are picked --
  * date-only stays a pure label). Once due:
- *   - "queued" (media linked): publish that specific folder now, via the
- *     same helpers post.ts uses, then mark the slot posted.
- *   - "planned" (nothing linked): log + notify once via GitHub's own
- *     workflow-failure email (same mechanism as reminders.ts), then stay
- *     quiet on later runs so it doesn't repeat every hour forever.
+ *   - "queued" (media already linked): publish that specific folder now,
+ *     via the same helpers post.ts uses, then mark the slot posted.
+ *   - "planned" with an `expectedFileName`: try to auto-link it first --
+ *     check this channel's already-synced-but-unclaimed inbox folders for
+ *     a file with that exact name, then (if not found) look it up live in
+ *     Drive and download it directly. Either way, once linked it falls
+ *     through to publish immediately, same as an already-queued slot.
+ *   - "planned" otherwise (nothing linked, no match found): log + notify
+ *     once via GitHub's own workflow-failure email (same mechanism as
+ *     reminders.ts), then stay quiet on later runs so it doesn't repeat
+ *     every hour forever.
  */
+
+/** Every linkedPostPath already claimed by some slot in this project, so filename matching can't steal media reserved for a different post. */
+function claimedPaths(campaigns: Campaign[]): Set<string> {
+  const claimed = new Set<string>();
+  for (const c of campaigns) {
+    for (const s of c.slots) {
+      if (s.linkedPostPath) claimed.add(s.linkedPostPath);
+    }
+  }
+  return claimed;
+}
+
+/** Scans a channel's inbox for an already-synced, unclaimed post folder containing a file with this exact name. */
+async function findInInbox(
+  projectId: string,
+  channelId: string,
+  fileName: string,
+  claimed: Set<string>,
+): Promise<string | null> {
+  const dir = path.join(inboxRoot(projectId), channelId);
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return null;
+  }
+  for (const name of entries) {
+    const postDir = path.join(dir, name);
+    if (claimed.has(repoRelativePath(postDir))) continue;
+    let files: string[];
+    try {
+      files = await readdir(postDir);
+    } catch {
+      continue;
+    }
+    if (files.includes(fileName)) return postDir;
+  }
+  return null;
+}
+
 async function main() {
   const now = new Date();
   let anyDueNotification = false;
@@ -24,6 +83,7 @@ async function main() {
     const campaigns = await loadCampaigns(project.id);
     let channelsDirty = false;
     let campaignsDirty = false;
+    const claimed = claimedPaths(campaigns);
 
     for (const campaign of campaigns) {
       for (const slot of campaign.slots) {
@@ -42,9 +102,39 @@ async function main() {
 
         const label = `[${project.id}/${channel.id}] campaign "${campaign.name}" stage "${slot.stage}"`;
 
+        if (slot.status === 'planned' && slot.expectedFileName) {
+          const inboxHit = await findInInbox(project.id, channel.id, slot.expectedFileName, claimed);
+          if (inboxHit) {
+            slot.linkedPostPath = repoRelativePath(inboxHit);
+            slot.status = 'queued';
+            claimed.add(slot.linkedPostPath);
+            campaignsDirty = true;
+            console.log(`${label}: matched expected file "${slot.expectedFileName}" already synced at "${slot.linkedPostPath}"`);
+          } else {
+            const driveHit = await findFileByName(channel.driveFolderId, slot.expectedFileName).catch((err) => {
+              console.log(`${label}: Drive lookup for "${slot.expectedFileName}" failed -- ${err instanceof Error ? err.message : String(err)}`);
+              return null;
+            });
+            if (driveHit) {
+              const postDir = path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit));
+              await downloadEntry(driveHit, postDir, label);
+              channel.syncedDriveFileIds.push(driveHit.id);
+              channelsDirty = true;
+              slot.linkedPostPath = repoRelativePath(postDir);
+              slot.status = 'queued';
+              claimed.add(slot.linkedPostPath);
+              campaignsDirty = true;
+              console.log(`${label}: found "${slot.expectedFileName}" in Drive, downloaded to "${slot.linkedPostPath}"`);
+            }
+          }
+        }
+
         if (slot.status === 'planned') {
           if (!slot.scheduledNotifiedAt) {
-            console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but has no media linked -- link one in Content Queue.`);
+            const detail = slot.expectedFileName
+              ? `expected file "${slot.expectedFileName}" not found in Drive yet`
+              : 'has no media linked';
+            console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but ${detail} -- link one in Content Queue.`);
             slot.scheduledNotifiedAt = now.toISOString();
             campaignsDirty = true;
             anyDueNotification = true;
@@ -52,7 +142,7 @@ async function main() {
           continue;
         }
 
-        // status === "queued" -- media linked, publish it now regardless of the channel's own interval/FIFO position.
+        // status === "queued" -- media linked (by hand earlier, or just now above), publish it now regardless of the channel's own interval/FIFO position.
         if (!slot.linkedPostPath) {
           console.log(`::error::📅 SCHEDULED POST DUE: ${label} is "queued" but has no linkedPostPath (data inconsistency) -- skipping.`);
           continue;

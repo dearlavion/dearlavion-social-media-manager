@@ -65,6 +65,28 @@ export async function listNewEntries(folderId: string, alreadySyncedIds: string[
   return entries.filter((e) => e.id && !alreadySyncedIds.includes(e.id));
 }
 
+/**
+ * Looks up one file by its exact name directly inside a channel's Drive
+ * folder -- used by scheduled-posts.ts to match a slot's `expectedFileName`
+ * at post time, independent of the regular hourly sync-drive sweep. Exact,
+ * case-sensitive match; returns the first hit if Drive somehow has more
+ * than one file with that name in the folder.
+ */
+export async function findFileByName(folderId: string, fileName: string): Promise<DriveEntry | null> {
+  if (DRY_RUN) {
+    console.log(`[DRY_RUN] would look up file named "${fileName}" in Drive folder ${folderId}`);
+    return null;
+  }
+  const escapedName = fileName.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const drive = driveClient();
+  const res = await drive.files.list({
+    q: `'${folderId}' in parents and name = '${escapedName}' and trashed = false`,
+    fields: 'files(id, name, createdTime, mimeType, size)',
+  });
+  const [first] = (res.data.files ?? []) as DriveEntry[];
+  return first ?? null;
+}
+
 /** Lists the media files directly inside a carousel subfolder (one level, not recursive). */
 export async function listFolderChildren(folderId: string): Promise<DriveEntry[]> {
   if (DRY_RUN) {

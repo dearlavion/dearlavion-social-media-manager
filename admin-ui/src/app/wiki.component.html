@@ -187,12 +187,29 @@
       This does <em>not</em> wait for the channel's usual oldest-file-first turn.
     </li>
     <li>
-      If nothing is linked yet — it logs the message, marks the slot notified (so it won't repeat every hour), and
-      <strong>deliberately fails the run</strong> so GitHub's own "workflow run failed" email fires — the exact
-      same mechanism the <a href="#reminders">Scheduler</a> already uses, no new email service. Link media before
-      the target time to avoid this.
+      If nothing is linked yet <strong>but the post has an "Expected Drive file name" set</strong> — before giving
+      up, it looks for a file with that exact name: first among this channel's already-synced-but-unclaimed posts
+      sitting in <code>inbox/</code>, then (if not found there) live in the channel's Drive folder itself,
+      downloading it directly if it finds one. Either way, a match links and publishes immediately, same as the
+      already-linked case above.
+    </li>
+    <li>
+      If nothing is linked and nothing matches — it logs the message (naming the expected file if one was set),
+      marks the slot notified (so it won't repeat every hour), and <strong>deliberately fails the run</strong> so
+      GitHub's own "workflow run failed" email fires — the exact same mechanism the <a href="#reminders">Scheduler</a>
+      already uses, no new email service. Link media (or upload the expected file) before the target time to
+      avoid this.
     </li>
   </ol>
+  <h2>Naming a file ahead of time</h2>
+  <p>
+    In Content Queue, both "Add planned post" and "Edit" have an optional <strong>Expected Drive file name</strong>
+    field. Type the exact name you're going to upload (e.g. <code>IMG_1234.jpg</code>), upload it to the channel's
+    Drive folder whenever you get to it, and the scheduled run above finds and links it automatically once the
+    target time arrives — no need to come back and click "Link media" yourself. Matching is exact and
+    case-sensitive (a Drive auto-rename like <code>IMG_1234 (1).jpg</code> won't match), and single-file only —
+    it doesn't match carousel subfolders.
+  </p>
   <h2>Why the regular hourly post run won't post it early</h2>
   <p>
     A post folder linked to a slot with a <em>future</em> target time is treated as reserved — the regular

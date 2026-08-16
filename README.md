@@ -101,7 +101,10 @@ This is a planning/tracking layer on top of the existing due-check engine — fo
 Setting **both** a target date and a target time on a Planned post (Content Queue) turns it into a real scheduled post, handled by `.github/workflows/scheduled-posts.yml` (hourly, offset from sync-drive/post/reminders). Once that date+time has passed:
 
 - **Media linked** (`status: "queued"`) — `scheduled-posts.ts` publishes that specific post immediately, via the same publish pipeline `post.ts` uses, then marks the slot `posted`. This bypasses the channel's usual oldest-file-first queue entirely — it's not "wait your turn," it's "go now."
-- **No media linked** (`status: "planned"`) — same notification mechanism as [Scheduler](#scheduler-personal-reminders): logs the message, marks it notified (so it doesn't repeat every hourly run), and **deliberately fails the run** so GitHub's own "workflow run failed" email fires. Link media before the target time to avoid this.
+- **Not linked, but an `expectedFileName` is set** — before giving up, `scheduled-posts.ts` looks for a file with that *exact* name: first among this channel's already-synced-but-unclaimed `inbox/` folders, then (if not found there) live in the channel's Drive folder itself, downloading it directly if found. Either way, once matched it links and publishes immediately, same as above. This is how you can name a file when planning the post, upload it to Drive whenever, and have it get picked up and posted automatically at the scheduled time without ever touching Content Queue again.
+- **No media linked, and no match** (`status: "planned"`) — same notification mechanism as [Scheduler](#scheduler-personal-reminders): logs the message (naming the expected filename if one was set), marks it notified (so it doesn't repeat every hourly run), and **deliberately fails the run** so GitHub's own "workflow run failed" email fires. Link media (or upload the expected file) before the target time to avoid this.
+
+**Filename matching is exact and case-sensitive** — `IMG_1234.jpg` won't match `img_1234.jpg` or a Drive auto-rename like `IMG_1234 (1).jpg`. It's also single-file only; carousels (a Drive subfolder) aren't matched by name.
 
 **Why the regular hourly `post.yml` won't "steal" a scheduled post early:** a post folder linked to a slot with a future target time is treated as reserved — `post.ts`'s normal oldest-file-first pick skips it and falls through to the next unreserved folder (or does nothing, if that was the only one waiting). Once the target time passes, the reservation lifts and it becomes fair game for the regular flow too, in case `scheduled-posts.yml` missed it for some reason.
 
@@ -134,7 +137,7 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 
 ```
 .github/workflows/            sync-drive.yml, post.yml, scheduled-posts.yml, reminders.yml, deploy-admin-ui.yml
-automation/                   Node/TS scripts the workflows run (config, drive sync, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts)
+automation/                   Node/TS scripts the workflows run (config, drive.ts, drive-sync-helpers.ts, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts)
 config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
 config/<projectId>/campaigns.json  that project's campaigns -- [{id, name, goal, slots: [{stage, channelId, status, linkedPostPath, ...}]}] (absent if none created yet)

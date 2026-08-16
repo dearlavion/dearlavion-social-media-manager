@@ -114,8 +114,19 @@
                           <input type="time" [(ngModel)]="editingPlannedTargetTime" [disabled]="!editingPlannedTargetDate" />
                         </label>
                       </div>
+                      <label class="expected-filename-label">
+                        Expected Drive file name (optional)
+                        <input [(ngModel)]="editingPlannedExpectedFileName" placeholder="e.g. IMG_1234.jpg" />
+                      </label>
                       @if (editingPlannedTargetDate && editingPlannedTargetTime) {
-                        <p class="hint">Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked, or notify you once if it isn't yet.</p>
+                        <p class="hint">
+                          Scheduled — the hourly scheduled-posts run will publish this automatically once media is
+                          linked, or notify you once if it isn't yet.
+                          @if (editingPlannedExpectedFileName.trim()) {
+                            It'll first look for a file named exactly "{{ editingPlannedExpectedFileName.trim() }}"
+                            (already synced, or live in Drive) and link it automatically — exact match only, case-sensitive.
+                          }
+                        </p>
                       }
                       <div class="planned-edit-actions">
                         <button type="button" class="btn-ghost" [disabled]="saving" (click)="saveEditPlanned(target.slot)">Save</button>
@@ -130,6 +141,9 @@
                       <span class="target-date-badge">📅 {{ target.slot.targetDueAt | date: 'MMM d, h:mm a' }}</span>
                     } @else if (target.slot.targetDate) {
                       <span class="target-date-badge">📅 {{ target.slot.targetDate | date: 'MMM d' }}</span>
+                    }
+                    @if (target.slot.expectedFileName) {
+                      <span class="expected-filename-badge">📄 {{ target.slot.expectedFileName }}</span>
                     }
                     <button
                       type="button"
@@ -191,9 +205,20 @@
                   Time to post
                   <input type="time" [(ngModel)]="newPlannedTargetTime" [disabled]="!newPlannedTargetDate" />
                 </label>
+                <label>
+                  Expected Drive file name (optional)
+                  <input [(ngModel)]="newPlannedExpectedFileName" placeholder="e.g. IMG_1234.jpg" />
+                </label>
               </div>
               @if (newPlannedTargetDate && newPlannedTargetTime) {
-                <p class="hint">Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked, or notify you once if it isn't yet.</p>
+                <p class="hint">
+                  Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked,
+                  or notify you once if it isn't yet.
+                  @if (newPlannedExpectedFileName.trim()) {
+                    It'll first look for a file named exactly "{{ newPlannedExpectedFileName.trim() }}" (already
+                    synced, or live in Drive) and link it automatically — exact match only, case-sensitive.
+                  }
+                </p>
               }
               <div class="chip-row">
                 @for (s of defaultStages; track s.stage) {

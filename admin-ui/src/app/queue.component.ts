@@ -52,6 +52,7 @@ export class QueueComponent {
   newPlannedGuidance = '';
   newPlannedTargetDate = '';
   newPlannedTargetTime = '';
+  newPlannedExpectedFileName = '';
 
   // Editing an existing planned post inline.
   editingPlannedSlotId: string | null = null;
@@ -59,6 +60,7 @@ export class QueueComponent {
   editingPlannedGuidance = '';
   editingPlannedTargetDate = '';
   editingPlannedTargetTime = '';
+  editingPlannedExpectedFileName = '';
 
   constructor(private readonly github: GithubService) {}
 
@@ -148,6 +150,7 @@ export class QueueComponent {
     this.newPlannedGuidance = '';
     this.newPlannedTargetDate = '';
     this.newPlannedTargetTime = '';
+    this.newPlannedExpectedFileName = '';
   }
 
   cancelAddPlanned(): void {
@@ -171,6 +174,9 @@ export class QueueComponent {
         slot.targetDueAt = computeTargetDueAt(this.newPlannedTargetDate, this.newPlannedTargetTime);
       }
     }
+    if (this.newPlannedExpectedFileName.trim()) {
+      slot.expectedFileName = this.newPlannedExpectedFileName.trim();
+    }
     campaign.slots = [...campaign.slots, slot];
     this.addingPlannedForChannel = null;
     await this.saveCampaigns();
@@ -184,6 +190,7 @@ export class QueueComponent {
     this.editingPlannedGuidance = slot.guidance;
     this.editingPlannedTargetDate = slot.targetDate ?? '';
     this.editingPlannedTargetTime = slot.targetTime ?? '';
+    this.editingPlannedExpectedFileName = slot.expectedFileName ?? '';
   }
 
   cancelEditPlanned(): void {
@@ -204,6 +211,7 @@ export class QueueComponent {
       slot.scheduledNotifiedAt = undefined;
     }
     slot.targetDueAt = newTargetDueAt;
+    slot.expectedFileName = this.editingPlannedExpectedFileName.trim() || undefined;
     this.editingPlannedSlotId = null;
     await this.saveCampaigns();
   }

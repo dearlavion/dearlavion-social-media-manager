@@ -29,6 +29,7 @@ jobs:
         working-directory: automation
         env:
           BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
         run: npm run scheduled-posts
 
       - name: Commit posted state
