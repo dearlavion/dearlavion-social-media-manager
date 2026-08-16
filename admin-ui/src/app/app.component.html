@@ -1,5 +1,19 @@
 <div class="app-shell">
-  <aside class="sidebar">
+  <header class="mobile-topbar">
+    <button type="button" class="burger-btn" (click)="mobileMenuOpen = !mobileMenuOpen" aria-label="Toggle menu">
+      ☰
+    </button>
+    <div class="logo">
+      <div class="logo-icon">✦</div>
+      <span>Dear Lavion</span>
+    </div>
+  </header>
+
+  @if (mobileMenuOpen) {
+    <div class="sidebar-backdrop" (click)="mobileMenuOpen = false"></div>
+  }
+
+  <aside class="sidebar" [class.open]="mobileMenuOpen">
     <div class="logo">
       <div class="logo-icon">✦</div>
       <span>Dear Lavion</span>
@@ -8,35 +22,35 @@
 
     <div class="nav-title">Menu</div>
     <nav class="nav">
-      <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="view = 'dashboard'">
+      <button type="button" class="nav-link" [class.active]="view === 'dashboard'" (click)="setView('dashboard')">
         <span class="nav-icon">▦</span><span>Dashboard</span>
       </button>
-      <button type="button" class="nav-link" [class.active]="view === 'campaigns'" (click)="view = 'campaigns'">
+      <button type="button" class="nav-link" [class.active]="view === 'campaigns'" (click)="setView('campaigns')">
         <span class="nav-icon">🎯</span><span>Campaigns</span>
       </button>
-      <button type="button" class="nav-link" [class.active]="view === 'queue'" (click)="view = 'queue'">
+      <button type="button" class="nav-link" [class.active]="view === 'queue'" (click)="setView('queue')">
         <span class="nav-icon">🗂</span><span>Content Queue</span>
       </button>
-      <button type="button" class="nav-link" [class.active]="view === 'scheduler'" (click)="view = 'scheduler'">
+      <button type="button" class="nav-link" [class.active]="view === 'scheduler'" (click)="setView('scheduler')">
         <span class="nav-icon">📅</span><span>Scheduler</span>
       </button>
-      <button type="button" class="nav-link" [class.active]="view === 'setup'" (click)="view = 'setup'">
+      <button type="button" class="nav-link" [class.active]="view === 'setup'" (click)="setView('setup')">
         <span class="nav-icon">⚙</span><span>Set Up</span>
       </button>
-      <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="view = 'wiki'">
+      <button type="button" class="nav-link" [class.active]="view === 'wiki'" (click)="setView('wiki')">
         <span class="nav-icon">📖</span><span>Wiki</span>
       </button>
     </nav>
 
     <div class="nav-title">Quick links</div>
     <nav class="nav">
-      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}" target="_blank" rel="noopener">
+      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}" target="_blank" rel="noopener" (click)="mobileMenuOpen = false">
         <span class="nav-icon">⌘</span><span>Repository</span>
       </a>
-      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
+      <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener" (click)="mobileMenuOpen = false">
         <span class="nav-icon">▶</span><span>Workflow runs</span>
       </a>
-      <a href="https://publish.buffer.com" target="_blank" rel="noopener">
+      <a href="https://publish.buffer.com" target="_blank" rel="noopener" (click)="mobileMenuOpen = false">
         <span class="nav-icon">↗</span><span>Buffer dashboard</span>
       </a>
     </nav>

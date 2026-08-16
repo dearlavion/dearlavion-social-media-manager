@@ -24,6 +24,9 @@ export class AppComponent implements OnInit {
 
   view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' | 'campaigns' = 'dashboard';
 
+  /** Off-canvas sidebar state on mobile -- irrelevant/unused above the 700px breakpoint. */
+  mobileMenuOpen = false;
+
   connection: GithubConnection = {
     owner: 'dearlavion',
     repo: 'dearlavion-social-media-manager',
@@ -71,6 +74,12 @@ export class AppComponent implements OnInit {
   }
 
   constructor(private readonly github: GithubService) {}
+
+  /** Switches the active view and, on mobile, closes the off-canvas menu -- otherwise it'd stay open over the new page. */
+  setView(view: AppComponent['view']): void {
+    this.view = view;
+    this.mobileMenuOpen = false;
+  }
 
   ngOnInit(): void {
     const saved = sessionStorage.getItem(CONNECTION_STORAGE_KEY);
