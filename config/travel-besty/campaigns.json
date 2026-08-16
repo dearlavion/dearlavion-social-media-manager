@@ -25,9 +25,9 @@
         "channelId": "travel-besty-instagram",
         "status": "planned",
         "prepStatus": "todo",
-        "targetDate": "2026-08-16",
-        "targetTime": "22:05",
-        "targetDueAt": "2026-08-16T14:05:00.000Z",
+        "targetDate": "2026-08-17",
+        "targetTime": "00:25",
+        "targetDueAt": "2026-08-16T16:25:00.000Z",
         "expectedFileName": "doesnotexist"
       }
     ],
