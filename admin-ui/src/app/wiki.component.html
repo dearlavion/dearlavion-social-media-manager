@@ -210,6 +210,13 @@
     case-sensitive (a Drive auto-rename like <code>IMG_1234 (1).jpg</code> won't match), and single-file only —
     it doesn't match carousel subfolders.
   </p>
+  <p>
+    File type is checked against the name's extension before anything else happens — <code>.jpg</code> /
+    <code>.jpeg</code> / <code>.png</code> / <code>.webp</code> for images, <code>.mp4</code> / <code>.mov</code> /
+    <code>.webm</code> for video (case-insensitive). Something like <code>photo.gif</code> or a name with no
+    extension at all is rejected immediately with a clear "unsupported extension" notification — it never even
+    searches for it, so you're not left wondering why a file that clearly exists in Drive "wasn't found."
+  </p>
   <h2>Why the regular hourly post run won't post it early</h2>
   <p>
     A post folder linked to a slot with a <em>future</em> target time is treated as reserved — the regular

@@ -106,6 +106,8 @@ Setting **both** a target date and a target time on a Planned post (Content Queu
 
 **Filename matching is exact and case-sensitive** — `IMG_1234.jpg` won't match `img_1234.jpg` or a Drive auto-rename like `IMG_1234 (1).jpg`. It's also single-file only; carousels (a Drive subfolder) aren't matched by name.
 
+**File type is checked up front, against the expected filename's extension** — `.jpg`/`.jpeg`/`.png`/`.webp` for images, `.mp4`/`.mov`/`.webm` for video (case-insensitive). If `expectedFileName` doesn't have one of these, `scheduled-posts.ts` doesn't even look for it — it notifies immediately with a clear "unsupported extension" message, rather than searching, downloading, and then failing later with a confusing "no media" notification for a file that actually exists.
+
 **Why the regular hourly `post.yml` won't "steal" a scheduled post early:** a post folder linked to a slot with a future target time is treated as reserved — `post.ts`'s normal oldest-file-first pick skips it and falls through to the next unreserved folder (or does nothing, if that was the only one waiting). Once the target time passes, the reservation lifts and it becomes fair game for the regular flow too, in case `scheduled-posts.yml` missed it for some reason.
 
 **Precision:** like Scheduler, this is hourly-cron precision — a target time can be acted on up to ~1h after it passes, not to the minute.

@@ -13,7 +13,7 @@ import {
 } from './config.js';
 import type { Campaign } from './config.js';
 import { getPublisher } from './publishers/index.js';
-import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
+import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
 import { findFileByName } from './drive.js';
 import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
 
@@ -103,6 +103,22 @@ async function main() {
         const label = `[${project.id}/${channel.id}] campaign "${campaign.name}" stage "${slot.stage}"`;
 
         if (slot.status === 'planned' && slot.expectedFileName) {
+          const ext = path.extname(slot.expectedFileName).toLowerCase();
+          if (!IMAGE_EXTENSIONS.has(ext) && !VIDEO_EXTENSIONS.has(ext)) {
+            // Fail fast, before even looking -- a match would just get silently dropped by readPostMedia later,
+            // producing a confusing "no media" notification for a file that actually exists.
+            if (!slot.scheduledNotifiedAt) {
+              const supported = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS].join(', ');
+              console.log(
+                `::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but expected file "${slot.expectedFileName}" has an unsupported extension (need one of ${supported}) -- rename it or pick a supported format.`,
+              );
+              slot.scheduledNotifiedAt = now.toISOString();
+              campaignsDirty = true;
+              anyDueNotification = true;
+            }
+            continue;
+          }
+
           const inboxHit = await findInInbox(project.id, channel.id, slot.expectedFileName, claimed);
           if (inboxHit) {
             slot.linkedPostPath = repoRelativePath(inboxHit);
