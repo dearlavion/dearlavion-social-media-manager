@@ -1,0 +1,49 @@
+name: 📅 Scheduled posts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 * * * *' # every hour, 45 min past (offset from sync-drive/post/reminders)
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install automation deps
+        working-directory: automation
+        run: npm ci
+
+      - name: Publish due scheduled slots, notify on missing media
+        id: check
+        working-directory: automation
+        env:
+          BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
+        run: npm run scheduled-posts
+
+      - name: Commit posted state
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: scheduled post run'
+          file_pattern: 'inbox/** posted/** config/**/campaigns.json config/**/channels.json'
+
+      # Same pattern as reminders.yml: GitHub can't put custom text in its
+      # own notification email, so this deliberately fails the run to
+      # trigger GitHub's built-in "workflow run failed" email (Settings ->
+      # Notifications -> Actions must have failure emails enabled). The
+      # actual message is in the step log above, as a ::error:: annotation.
+      - name: Fail so GitHub sends a notification email
+        if: steps.check.outputs.due == 'true'
+        run: |
+          echo "A scheduled post is due with no media linked -- see the step log above for which one."
+          exit 1

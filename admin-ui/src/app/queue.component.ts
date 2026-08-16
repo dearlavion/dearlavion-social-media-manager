@@ -10,6 +10,7 @@ import {
   DEFAULT_STAGES,
   LinkedSlot,
   campaignDateOptions,
+  computeTargetDueAt,
   findLinkedSlot,
   newSlot,
   openSlotsForChannel,
@@ -50,12 +51,14 @@ export class QueueComponent {
   newPlannedStage = '';
   newPlannedGuidance = '';
   newPlannedTargetDate = '';
+  newPlannedTargetTime = '';
 
   // Editing an existing planned post inline.
   editingPlannedSlotId: string | null = null;
   editingPlannedStage = '';
   editingPlannedGuidance = '';
   editingPlannedTargetDate = '';
+  editingPlannedTargetTime = '';
 
   constructor(private readonly github: GithubService) {}
 
@@ -85,6 +88,11 @@ export class QueueComponent {
 
   plannedFor(channelId: string): LinkedSlot[] {
     return openSlotsForChannel(this.campaigns, channelId);
+  }
+
+  /** Synced posts for a channel not already claimed by any slot -- candidates for a Planned row's "Link media" action. */
+  unlinkedSyncedFor(channelId: string): QueuedPost[] {
+    return this.queueFor(channelId).filter((post) => !this.linkedSlotFor(post));
   }
 
   dateOptionsForCampaign(campaignId: string): string[] {
@@ -139,6 +147,7 @@ export class QueueComponent {
     this.newPlannedStage = '';
     this.newPlannedGuidance = '';
     this.newPlannedTargetDate = '';
+    this.newPlannedTargetTime = '';
   }
 
   cancelAddPlanned(): void {
@@ -155,7 +164,13 @@ export class QueueComponent {
     const campaign = this.campaigns.find((c) => c.id === this.newPlannedCampaignId);
     if (!stage || !campaign) return;
     const slot = newSlot(stage, this.newPlannedGuidance.trim(), channelId);
-    if (this.newPlannedTargetDate) slot.targetDate = this.newPlannedTargetDate;
+    if (this.newPlannedTargetDate) {
+      slot.targetDate = this.newPlannedTargetDate;
+      if (this.newPlannedTargetTime) {
+        slot.targetTime = this.newPlannedTargetTime;
+        slot.targetDueAt = computeTargetDueAt(this.newPlannedTargetDate, this.newPlannedTargetTime);
+      }
+    }
     campaign.slots = [...campaign.slots, slot];
     this.addingPlannedForChannel = null;
     await this.saveCampaigns();
@@ -168,6 +183,7 @@ export class QueueComponent {
     this.editingPlannedStage = slot.stage;
     this.editingPlannedGuidance = slot.guidance;
     this.editingPlannedTargetDate = slot.targetDate ?? '';
+    this.editingPlannedTargetTime = slot.targetTime ?? '';
   }
 
   cancelEditPlanned(): void {
@@ -180,6 +196,14 @@ export class QueueComponent {
     slot.stage = stage;
     slot.guidance = this.editingPlannedGuidance.trim();
     slot.targetDate = this.editingPlannedTargetDate || undefined;
+    slot.targetTime = this.editingPlannedTargetDate && this.editingPlannedTargetTime ? this.editingPlannedTargetTime : undefined;
+    const newTargetDueAt =
+      slot.targetDate && slot.targetTime ? computeTargetDueAt(slot.targetDate, slot.targetTime) : undefined;
+    if (newTargetDueAt !== slot.targetDueAt) {
+      // The due time actually changed -- any past "due, no media" notification was about the old time, not this one.
+      slot.scheduledNotifiedAt = undefined;
+    }
+    slot.targetDueAt = newTargetDueAt;
     this.editingPlannedSlotId = null;
     await this.saveCampaigns();
   }

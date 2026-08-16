@@ -99,15 +99,24 @@
                     <div class="planned-edit-form">
                       <input [(ngModel)]="editingPlannedStage" placeholder="stage" class="planned-stage-input" />
                       <textarea [(ngModel)]="editingPlannedGuidance" rows="2" placeholder="guidance"></textarea>
-                      <label class="target-date-label">
-                        Target date
-                        <select [(ngModel)]="editingPlannedTargetDate">
-                          <option value="">No target date</option>
-                          @for (d of dateOptionsForCampaign(target.campaign.id); track d) {
-                            <option [value]="d">{{ d | date: 'EEE, MMM d' }}</option>
-                          }
-                        </select>
-                      </label>
+                      <div class="target-date-row">
+                        <label class="target-date-label">
+                          Target date
+                          <select [(ngModel)]="editingPlannedTargetDate">
+                            <option value="">No target date</option>
+                            @for (d of dateOptionsForCampaign(target.campaign.id); track d) {
+                              <option [value]="d">{{ d | date: 'EEE, MMM d' }}</option>
+                            }
+                          </select>
+                        </label>
+                        <label class="target-time-label">
+                          Time to post
+                          <input type="time" [(ngModel)]="editingPlannedTargetTime" [disabled]="!editingPlannedTargetDate" />
+                        </label>
+                      </div>
+                      @if (editingPlannedTargetDate && editingPlannedTargetTime) {
+                        <p class="hint">Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked, or notify you once if it isn't yet.</p>
+                      }
                       <div class="planned-edit-actions">
                         <button type="button" class="btn-ghost" [disabled]="saving" (click)="saveEditPlanned(target.slot)">Save</button>
                         <button type="button" class="btn-ghost" (click)="cancelEditPlanned()">Cancel</button>
@@ -117,7 +126,9 @@
                     <span class="stage-badge">{{ target.slot.stage }}</span>
                     <span class="campaign-name">{{ target.campaign.name }}</span>
                     <span class="planned-guidance">{{ target.slot.guidance || '(no guidance)' }}</span>
-                    @if (target.slot.targetDate) {
+                    @if (target.slot.targetDueAt) {
+                      <span class="target-date-badge">📅 {{ target.slot.targetDueAt | date: 'MMM d, h:mm a' }}</span>
+                    } @else if (target.slot.targetDate) {
                       <span class="target-date-badge">📅 {{ target.slot.targetDate | date: 'MMM d' }}</span>
                     }
                     <button
@@ -129,6 +140,17 @@
                     >
                       {{ target.slot.prepStatus === 'done' ? '✓ done' : 'todo' }}
                     </button>
+
+                    @if (unlinkedSyncedFor(target.slot.channelId).length > 0) {
+                      <div class="campaign-link-picker">
+                        @for (post of unlinkedSyncedFor(target.slot.channelId); track post.path) {
+                          <button type="button" class="btn-ghost" [disabled]="saving" (click)="linkToCampaign(target, post)">
+                            Link media: "{{ post.name }}" ({{ post.mediaType }})
+                          </button>
+                        }
+                      </div>
+                    }
+
                     <div class="planned-item-actions">
                       <button type="button" class="btn-ghost" (click)="startEditPlanned(target.slot)">Edit</button>
                       <button type="button" class="btn-ghost" [disabled]="saving" (click)="removePlanned(target.campaign, target.slot)">Remove</button>
@@ -165,7 +187,14 @@
                     }
                   </select>
                 </label>
+                <label>
+                  Time to post
+                  <input type="time" [(ngModel)]="newPlannedTargetTime" [disabled]="!newPlannedTargetDate" />
+                </label>
               </div>
+              @if (newPlannedTargetDate && newPlannedTargetTime) {
+                <p class="hint">Scheduled — the hourly scheduled-posts run will publish this automatically once media is linked, or notify you once if it isn't yet.</p>
+              }
               <div class="chip-row">
                 @for (s of defaultStages; track s.stage) {
                   <button type="button" class="chip" (click)="pickPlannedStage(s.stage, s.guidance)">{{ s.stage }}</button>

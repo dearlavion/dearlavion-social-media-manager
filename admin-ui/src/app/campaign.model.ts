@@ -7,6 +7,11 @@ function toDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** The UTC instant for a local date+time pair -- same computation as Reminder.dueAt (reminder.model.ts). */
+export function computeTargetDueAt(date: string, time: string): string {
+  return new Date(`${date}T${time}:00`).toISOString();
+}
+
 /** Whether the content for a planned slot has actually been created yet -- independent of publish lifecycle. */
 export type PrepStatus = 'todo' | 'done';
 
@@ -30,8 +35,14 @@ export interface CampaignSlot {
   status: CampaignSlotStatus;
   /** Content-creation checklist state -- "have I actually made this yet", separate from `status`. Defaults to "todo". */
   prepStatus?: PrepStatus;
-  /** YYYY-MM-DD -- when you're aiming to actually publish this one. Informational only, doesn't gate posting. */
+  /** YYYY-MM-DD -- date-only is just a label; see targetDueAt for when it becomes actionable. */
   targetDate?: string;
+  /** HH:MM, set alongside targetDate. */
+  targetTime?: string;
+  /** ISO instant computed from targetDate+targetTime once both are set -- only then does scheduled-posts.ts act on this slot. */
+  targetDueAt?: string;
+  /** Set by scheduled-posts.ts once it's notified about this slot being due with no media linked, so it doesn't repeat every run. */
+  scheduledNotifiedAt?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }

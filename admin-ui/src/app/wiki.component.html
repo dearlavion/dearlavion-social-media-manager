@@ -134,8 +134,8 @@
     <strong>Synced posts connect to Campaigns</strong>: a post already linked to a slot shows a
     <code>🎯 Campaign — stage</code> badge; one that isn't linked yet, with an open (<code>planned</code>) slot
     available for that channel in some campaign, shows a <strong>Link to "…"</strong> button per candidate slot.
-    Same link Campaigns' own detail view creates (see below) — just reachable from whichever side you're looking
-    at.
+    Symmetrically, an unlinked <strong>Planned</strong> row shows a <strong>Link media: "…"</strong> button per
+    currently-synced post it could claim — same underlying link, reachable from whichever side you're looking at.
   </p>
   <p>
     <strong>Planned</strong> only shows campaigns whose <strong>status is "ongoing"</strong> (set from a campaign's
@@ -144,14 +144,20 @@
   </p>
   <ul>
     <li><strong>+ Add planned post</strong> — pick which ongoing campaign it belongs to, a stage (quick-pick or
-      your own), guidance, and optionally a <strong>target date</strong> — creates a new slot on that campaign
-      directly, without going through the builder.</li>
-    <li><strong>Edit</strong> a planned post's stage/guidance/target date inline, or <strong>Remove</strong> it entirely.</li>
+      your own), guidance, and optionally a <strong>target date and time</strong> — creates a new slot on that
+      campaign directly, without going through the builder.</li>
+    <li><strong>Edit</strong> a planned post's stage/guidance/target date/time inline, or <strong>Remove</strong> it entirely.</li>
     <li>
       The <strong>target date</strong> dropdown is populated from that post's campaign — every day from its
       start to end date if both are set (e.g. "Sun, Aug 16"), or the next 30 days from today if the campaign has
-      no dates. It's purely a planning label shown as a <code>📅 date</code> badge on the row — nothing enforces
-      it or uses it to decide when a post actually goes out; that's still <code>intervalHours</code> and the cron.
+      no dates. <strong>Date alone</strong> stays a pure planning label (a <code>📅</code> badge on the row) —
+      nothing enforces it. Add a <strong>time</strong> too (only enabled once a date is picked) and the slot
+      becomes a real scheduled post — see "Using Scheduled posts" below.
+    </li>
+    <li>
+      <strong>Link media: "…"</strong> — appears once there's at least one synced post for that row's channel not
+      already claimed by another slot. Clicking it does exactly what the Synced side's <strong>Link to "…"</strong>
+      does, just started from here.
     </li>
     <li>
       Toggle its <strong>todo / done</strong> chip — a content-<em>creation</em> checklist ("have I actually made
@@ -162,6 +168,42 @@
   </ul>
   <p>
     All of the above needs a token, same as any other save on this page.
+  </p>
+
+  <h1>Using Scheduled posts</h1>
+  <p class="intro">
+    Setting <strong>both</strong> a target date and a target time on a Planned post turns it into a real scheduled
+    post — this is the one case where a campaign slot actually drives when something publishes, rather than just
+    tracking it.
+  </p>
+  <h2>How it works</h2>
+  <ol>
+    <li>
+      <code>.github/workflows/scheduled-posts.yml</code> runs hourly. Once a slot's target date+time has passed:
+    </li>
+    <li>
+      If media is already linked (<strong>Link media</strong> / <strong>Link to "…"</strong>) — it publishes that
+      specific post right away, the same way <code>post.ts</code> would, then marks the slot <code>posted</code>.
+      This does <em>not</em> wait for the channel's usual oldest-file-first turn.
+    </li>
+    <li>
+      If nothing is linked yet — it logs the message, marks the slot notified (so it won't repeat every hour), and
+      <strong>deliberately fails the run</strong> so GitHub's own "workflow run failed" email fires — the exact
+      same mechanism the <a href="#reminders">Scheduler</a> already uses, no new email service. Link media before
+      the target time to avoid this.
+    </li>
+  </ol>
+  <h2>Why the regular hourly post run won't post it early</h2>
+  <p>
+    A post folder linked to a slot with a <em>future</em> target time is treated as reserved — the regular
+    <code>post.yml</code> run skips it and posts whatever's next in line instead (or does nothing, if that was the
+    only thing waiting). Once the target time actually passes, the reservation lifts, so if
+    <code>scheduled-posts.yml</code> somehow missed it, the regular flow can still pick it up as a fallback.
+  </p>
+  <h2>Precision</h2>
+  <p>
+    Same caveat as the Scheduler: this checks once an hour, so a target time can be acted on up to ~1 hour late,
+    not to the minute.
   </p>
 
   <h1>Using Campaigns</h1>
@@ -228,7 +270,7 @@
     <strong>Unlink</strong> it manually if that happens.
   </p>
 
-  <h1>Using the Scheduler (reminders)</h1>
+  <h1 id="reminders">Using the Scheduler (reminders)</h1>
   <p class="intro">
     <strong>Scheduler</strong> (left menu) is a personal reminder calendar, unrelated to any project. It doesn't
     send its own email — it reuses GitHub's built-in workflow-failure notification, since that's already something

@@ -342,6 +342,16 @@ label {
   max-width: 220px;
 }
 
+.target-date-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.target-time-label {
+  max-width: 140px;
+}
+
 .planned-item-actions {
   display: flex;
   gap: 4px;

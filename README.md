@@ -10,8 +10,9 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
 2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new top-level entries in its configured Google Drive folder. A loose image/video file becomes one post; a **subfolder** becomes a carousel post from everything inside it (up to Instagram's 10-item cap). Each becomes its own post folder — `inbox/<projectId>/<channelId>/<postId>/<file(s)>` — committed into the repo. Any single file over ~90MB is skipped (logged clearly) to stay under GitHub's 100MB push limit.
-3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`.
-4. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
+3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`. Skips any folder reserved by a not-yet-due scheduled post (see below).
+4. **Scheduled posts** (`.github/workflows/scheduled-posts.yml`, hourly, offset 45 min after sync): publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval — see [Scheduled posts](#scheduled-posts).
+5. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
 
 ### Why Buffer instead of each platform's API directly
 
@@ -75,11 +76,13 @@ Workflows run on their cron schedule automatically — across every project in `
 **Content Queue** (admin UI, left menu) has two sections per channel:
 
 - **Synced** — what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit.
-- **Planned (ongoing campaigns)** — a lightweight content-planning checklist, sourced from every campaign whose **status is `ongoing`** (loaded alongside the tree). Add a planned post directly here (pick which ongoing campaign it belongs to, a stage, guidance, and an optional **target date**), edit or remove it, and toggle a **todo / done** prep-status chip tracking whether you've actually created that content yet — independent of whether it's synced or posted. The target-date dropdown is generated from that post's campaign's start/end dates (or the next 30 days if unset) — purely a planning label (shown as a `📅` badge), it doesn't affect when anything actually posts.
+- **Planned (ongoing campaigns)** — a lightweight content-planning checklist, sourced from every campaign whose **status is `ongoing`** (loaded alongside the tree). Add a planned post directly here (pick which ongoing campaign it belongs to, a stage, guidance, and an optional **target date + time**), edit or remove it, and toggle a **todo / done** prep-status chip tracking whether you've actually created that content yet — independent of whether it's synced or posted. The target-date dropdown is generated from that post's campaign's start/end dates (or the next 30 days if unset).
+  - **Date only** stays a pure planning label (shown as a `📅` badge) — doesn't affect when anything posts.
+  - **Date + time** turns the slot into a real scheduled post — see [Scheduled posts](#scheduled-posts) below.
 
 Requires a project's channels to already be loaded on the Dashboard.
 
-**Connected to Campaigns**: each Synced post shows either a `🎯 <campaign> — <stage>` badge (already linked to a slot) or a **Link to "…"** button per open slot it could fulfil. Same link Campaigns' own detail view creates — this is just the other side of it, so you can link, or now plan and add new slots, from whichever view you happen to be looking at.
+**Connected to Campaigns**: each Synced post shows either a `🎯 <campaign> — <stage>` badge (already linked to a slot) or a **Link to "…"** button per open slot it could fulfil; each unlinked Planned row, symmetrically, shows a **Link media: "…"** button per currently-synced post it could claim. Same underlying link Campaigns' own detail view creates — reachable from whichever side you're looking at.
 
 ## Campaigns
 
@@ -89,9 +92,20 @@ Requires a project's channels to already be loaded on the Dashboard.
 - **Track it**: the campaign's detail view always surfaces a **"What to do next"** callout — the first slot that isn't posted yet, with its guidance. Once something matching that slot is synced from Drive, link it from the Content Queue's list of currently-queued posts (fetched the same way Content Queue does, via one Git Trees API call) — the slot flips to `queued`.
 - **Auto-completion**: when `post.yml` actually publishes a post whose folder is linked to a slot, `post.ts` flips that slot to `posted` and records the timestamp automatically — no manual bookkeeping once a post is linked. If a per-channel goal was set, the detail view shows actual posted count against it (e.g. "3/5 posted toward goal") — a progress readout only, nothing enforces it. Goals can be added, changed, or cleared later from the same detail view (**Set goal** / **Edit goal** next to each channel) — not just at creation time; setting a goal to 0 removes it. The detail view also has a **Status** dropdown (`open` / `ongoing` / `done`, shown on the campaign's card in the list too) and an **Edit dates** control for start/end — both purely descriptive, set by hand, not read by automation.
 
-This is a planning/tracking layer on top of the existing due-check engine, not a scheduler replacement — campaigns don't gate or reorder what actually posts; `intervalHours`/`enabled` on each channel still decide that.
+This is a planning/tracking layer on top of the existing due-check engine — for a slot with no target time, campaigns don't gate or reorder what actually posts; `intervalHours`/`enabled` on each channel still decide that. A slot *with* a target date+time is the one exception — see below.
 
 **Known limitation:** if a linked post is deleted or moved out of `inbox/` by hand instead of through the normal sync → post flow, its slot stays stuck on `queued` — nothing currently detects and clears a broken link.
+
+## Scheduled posts
+
+Setting **both** a target date and a target time on a Planned post (Content Queue) turns it into a real scheduled post, handled by `.github/workflows/scheduled-posts.yml` (hourly, offset from sync-drive/post/reminders). Once that date+time has passed:
+
+- **Media linked** (`status: "queued"`) — `scheduled-posts.ts` publishes that specific post immediately, via the same publish pipeline `post.ts` uses, then marks the slot `posted`. This bypasses the channel's usual oldest-file-first queue entirely — it's not "wait your turn," it's "go now."
+- **No media linked** (`status: "planned"`) — same notification mechanism as [Scheduler](#scheduler-personal-reminders): logs the message, marks it notified (so it doesn't repeat every hourly run), and **deliberately fails the run** so GitHub's own "workflow run failed" email fires. Link media before the target time to avoid this.
+
+**Why the regular hourly `post.yml` won't "steal" a scheduled post early:** a post folder linked to a slot with a future target time is treated as reserved — `post.ts`'s normal oldest-file-first pick skips it and falls through to the next unreserved folder (or does nothing, if that was the only one waiting). Once the target time passes, the reservation lifts and it becomes fair game for the regular flow too, in case `scheduled-posts.yml` missed it for some reason.
+
+**Precision:** like Scheduler, this is hourly-cron precision — a target time can be acted on up to ~1h after it passes, not to the minute.
 
 ## Scheduler (personal reminders)
 
@@ -119,8 +133,8 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 ## Repo layout
 
 ```
-.github/workflows/            sync-drive.yml, post.yml, reminders.yml, deploy-admin-ui.yml
-automation/                   Node/TS scripts the workflows run (config, drive sync, publishers/, reminders.ts)
+.github/workflows/            sync-drive.yml, post.yml, scheduled-posts.yml, reminders.yml, deploy-admin-ui.yml
+automation/                   Node/TS scripts the workflows run (config, drive sync, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts)
 config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
 config/<projectId>/campaigns.json  that project's campaigns -- [{id, name, goal, slots: [{stage, channelId, status, linkedPostPath, ...}]}] (absent if none created yet)

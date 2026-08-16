@@ -50,8 +50,18 @@ export interface CampaignSlot {
   status: 'planned' | 'queued' | 'posted';
   /** Content-creation checklist state, set in the admin UI -- purely informational, post.ts doesn't act on it. */
   prepStatus?: 'todo' | 'done';
-  /** YYYY-MM-DD, set in the admin UI -- purely informational, doesn't gate posting or affect scheduling. */
+  /** YYYY-MM-DD, set in the admin UI -- date-only is just a label; see targetDueAt for when it becomes actionable. */
   targetDate?: string;
+  /** HH:MM, set in the admin UI alongside targetDate. */
+  targetTime?: string;
+  /**
+   * ISO instant computed by the admin UI from targetDate+targetTime once
+   * both are set -- only then does this slot participate in
+   * scheduled-posts.ts. A date with no time stays a pure label.
+   */
+  targetDueAt?: string;
+  /** Set once scheduled-posts.ts has notified about this slot being due with no media linked, so it doesn't repeat every run. */
+  scheduledNotifiedAt?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }
@@ -232,6 +242,9 @@ function assertValidCampaign(projectId: string, value: unknown, index: number): 
     }
     if (!['planned', 'queued', 'posted'].includes(s.status)) {
       throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): invalid "status" "${s.status}"`);
+    }
+    if (s.targetDueAt !== undefined && Number.isNaN(new Date(s.targetDueAt).getTime())) {
+      throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): "targetDueAt" must be a valid ISO datetime string when present`);
     }
   });
   // Older/hand-edited campaigns.json may predate these fields -- normalized below rather than required here.

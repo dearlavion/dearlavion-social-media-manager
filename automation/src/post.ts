@@ -1,4 +1,4 @@
-import { readdir, mkdir, rename, readFile, stat } from 'node:fs/promises';
+import { readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import {
   loadProjects,
@@ -7,23 +7,23 @@ import {
   loadCampaigns,
   saveCampaigns,
   isDue,
-  publicRawUrl,
   repoRelativePath,
   inboxRoot,
-  postedRoot,
 } from './config.js';
-import type { ChannelConfig, Campaign } from './config.js';
+import type { Campaign } from './config.js';
 import { getPublisher } from './publishers/index.js';
-import type { PostMedia } from './publishers/types.js';
+import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, findSlotByLinkedPath } from './post-helpers.js';
 
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.webm']);
-const CAPTION_FILENAME = 'caption.txt';
-/** Instagram's hard cap on carousel items -- other platforms are more lenient, this is the binding one. */
-const MAX_CAROUSEL_ITEMS = 10;
-
-/** Picks the oldest post folder (still chronologically sortable by name) waiting in a channel's inbox. */
-async function nextPostFolder(projectId: string, channelId: string): Promise<string | null> {
+/**
+ * Picks the oldest post folder (still chronologically sortable by name)
+ * waiting in a channel's inbox, skipping any folder "reserved" by a
+ * campaign slot with a future targetDueAt -- that one is scheduled-posts.ts's
+ * job to publish at its own time, not this interval-based FIFO's to grab
+ * early. A folder with no reservation, or one whose reserved time has
+ * already passed (scheduled-posts.ts missed it, or it's simply overdue),
+ * is fair game as normal.
+ */
+async function nextPostFolder(projectId: string, channelId: string, campaigns: Campaign[], now: Date): Promise<string | null> {
   const dir = path.join(inboxRoot(projectId), channelId);
   let entries: string[];
   try {
@@ -36,37 +36,15 @@ async function nextPostFolder(projectId: string, channelId: string): Promise<str
     if ((await stat(path.join(dir, name))).isDirectory()) folders.push(name);
   }
   folders.sort();
-  return folders.length > 0 ? path.join(dir, folders[0]) : null;
-}
 
-async function readPostMedia(postDir: string): Promise<PostMedia[]> {
-  const files = (await readdir(postDir)).filter((f) => f !== CAPTION_FILENAME).sort();
-  const media: PostMedia[] = [];
-  for (const file of files) {
-    const ext = path.extname(file).toLowerCase();
-    const absPath = path.join(postDir, file);
-    if (IMAGE_EXTENSIONS.has(ext)) {
-      media.push({ type: 'image', url: publicRawUrl(absPath) });
-    } else if (VIDEO_EXTENSIONS.has(ext)) {
-      media.push({ type: 'video', url: publicRawUrl(absPath) });
-    }
+  for (const name of folders) {
+    const candidate = path.join(dir, name);
+    const slot = findSlotByLinkedPath(campaigns, repoRelativePath(candidate));
+    const reserved = slot?.targetDueAt && new Date(slot.targetDueAt).getTime() > now.getTime();
+    if (reserved) continue;
+    return candidate;
   }
-  return media;
-}
-
-async function resolveCaption(postDir: string, channel: ChannelConfig): Promise<string> {
-  try {
-    const custom = await readFile(path.join(postDir, CAPTION_FILENAME), 'utf-8');
-    return custom.trim();
-  } catch {
-    return channel.captionTemplate;
-  }
-}
-
-async function movePosted(postDir: string, projectId: string, channelId: string): Promise<void> {
-  const destParent = path.join(postedRoot(projectId), channelId);
-  await mkdir(destParent, { recursive: true });
-  await rename(postDir, path.join(destParent, path.basename(postDir)));
+  return null;
 }
 
 /**
@@ -114,9 +92,9 @@ async function main() {
         continue;
       }
 
-      const postDir = await nextPostFolder(project.id, channel.id);
+      const postDir = await nextPostFolder(project.id, channel.id, campaigns, now);
       if (!postDir) {
-        console.log(`[${project.id}/${channel.id}] due, but inbox is empty`);
+        console.log(`[${project.id}/${channel.id}] due, but inbox is empty (or everything in it is reserved for a scheduled post)`);
         continue;
       }
       const postName = path.basename(postDir);
