@@ -16,7 +16,8 @@
         "targetDate": "2026-08-16",
         "targetTime": "22:00",
         "targetDueAt": "2026-08-16T14:00:00.000Z",
-        "expectedFileName": "TravelBesty_logo"
+        "expectedFileName": "TravelBesty_logo",
+        "scheduledNotifiedAt": "2026-08-17T08:59:07.823Z"
       },
       {
         "id": "0884a5aa-822c-4e6e-b68c-2400ce6d0042",
@@ -28,7 +29,8 @@
         "targetDate": "2026-08-17",
         "targetTime": "16:43",
         "targetDueAt": "2026-08-17T08:43:00.000Z",
-        "expectedFileName": "doesnotexist"
+        "expectedFileName": "doesnotexist",
+        "scheduledNotifiedAt": "2026-08-17T08:59:07.823Z"
       }
     ],
     "channelTargets": [
