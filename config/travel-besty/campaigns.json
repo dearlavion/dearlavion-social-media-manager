@@ -6,21 +6,7 @@
     "startDate": "2026-08-16",
     "endDate": "2026-08-31",
     "createdAt": "2026-08-15T03:58:33.958Z",
-    "slots": [
-      {
-        "id": "0884a5aa-822c-4e6e-b68c-2400ce6d0042",
-        "stage": "awareness",
-        "guidance": "Fail test PASSED",
-        "channelId": "travel-besty-instagram",
-        "status": "planned",
-        "prepStatus": "todo",
-        "targetDate": "2026-08-17",
-        "targetTime": "21:17",
-        "targetDueAt": "2026-08-17T13:17:00.000Z",
-        "expectedFileName": "doesnotexist",
-        "scheduledNotifiedAt": "2026-08-17T13:45:38.736Z"
-      }
-    ],
+    "slots": [],
     "channelTargets": [
       {
         "channelId": "travel-besty-instagram",
