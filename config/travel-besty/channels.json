@@ -2,7 +2,7 @@
   {
     "id": "travel-besty-instagram",
     "platform": "instagram",
-    "enabled": false,
+    "enabled": true,
     "intervalHours": 6,
     "driveFolderId": "1dkpRsDwYv2ckHG2nactxf93ZgwR74L1I",
     "bufferChannelId": "6a7b44a5b2d9d57743598172",
@@ -10,6 +10,8 @@
     "syncedDriveFileIds": [
       "1uHJp5KDHFV89gHl3kFCPbuLetwiuGXu-"
     ],
-    "lastPostedAt": "2026-08-12T15:14:25.718Z"
+    "lastPostedAt": "2026-08-12T15:14:25.718Z",
+    "instagramPostType": "post",
+    "publisher": "buffer"
   }
 ]
