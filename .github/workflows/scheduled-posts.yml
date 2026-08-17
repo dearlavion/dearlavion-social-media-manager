@@ -48,15 +48,16 @@ jobs:
           commit_message: 'chore: scheduled post run'
           file_pattern: 'inbox/** posted/** config/**/campaigns.json config/**/channels.json'
 
-      # Same pattern as reminders.yml: GitHub can't put custom text in its
-      # own notification email, so this deliberately fails the run to
-      # trigger GitHub's built-in "workflow run failed" email (Settings ->
-      # Notifications -> Actions must have failure emails enabled) as a
-      # fast, guaranteed signal. The step above also opens a GitHub issue
-      # with the actual message, so you don't have to dig through this
-      # run's log to read it.
-      - name: Fail so GitHub sends a notification email
-        if: steps.check.outputs.due == 'true'
+      # Same pattern as reminders.yml: the "Publish due scheduled slots" step
+      # above opens a GitHub issue with the actual message for anything
+      # overdue or that failed to publish -- that's the primary notification.
+      # This step is only a backup: it fails the run (triggering GitHub's
+      # built-in "workflow run failed" email -- Settings -> Notifications ->
+      # Actions must have failure emails enabled) specifically when a
+      # notification issue itself couldn't be opened, so you're never
+      # silently missing something just because the nicer notification failed.
+      - name: Fail so GitHub sends a backup notification email
+        if: steps.check.outputs.notify_failed == 'true'
         run: |
-          echo "A scheduled post is due with no media linked -- see the step log above for which one."
+          echo "A scheduled-post notification issue failed to open -- see the step log above for what happened and why."
           exit 1

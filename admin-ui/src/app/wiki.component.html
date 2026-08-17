@@ -195,10 +195,10 @@
     </li>
     <li>
       If nothing is linked and nothing matches — it logs the message (naming the expected file if one was set),
-      opens a <strong>GitHub issue</strong> with the full detail, marks the slot notified (so it won't repeat every
-      run), and <strong>deliberately fails the run</strong> so GitHub's own "workflow run failed" email also fires —
-      the exact same mechanism the <a href="#reminders">Scheduler</a> already uses, no new email service. Link
-      media (or upload the expected file) before the target time to avoid this.
+      opens a <strong>GitHub issue</strong> with the full detail, and marks the slot notified (so it won't repeat
+      every run) — the exact same mechanism the <a href="#reminders">Scheduler</a> already uses, no new email
+      service. The run itself only fails (triggering GitHub's backup "workflow run failed" email) if that issue
+      couldn't be opened. Link media (or upload the expected file) before the target time to avoid this.
     </li>
   </ol>
   <h2>Naming a file ahead of time</h2>
@@ -250,9 +250,10 @@
     <code>❌ Post failed: ...</code> issue is opened and <strong>left open</strong>, with the real error message in
     the body. The post is left exactly where it was — still in <code>inbox/</code>, or still <code>queued</code> for
     a scheduled slot — so it's automatically retried the next time that workflow runs, rather than silently lost.
-    The run itself also ends up marked failed (<code>post.ts</code> sets a non-zero exit code;
-    <code>scheduled-posts.ts</code> sets its <code>due</code> output), so GitHub's built-in failure email fires too
-    — the same double coverage as reminders and scheduled-post notifications.
+    The issue is the actual notification; the run only ends up marked failed (triggering GitHub's backup failure
+    email) if <em>that issue itself</em> couldn't be opened — same backup-only pattern as reminders and
+    scheduled-post due-notifications. A post failing doesn't turn the run red by itself, as long as the issue
+    reporting it opened fine.
   </p>
   <h2>One channel's failure doesn't block the others</h2>
   <p>
@@ -340,32 +341,41 @@
     <li>
       <code>.github/workflows/reminders.yml</code> runs every hour. If a reminder's date/time has passed and it
       hasn't fired yet, the workflow logs it clearly, <strong>opens a GitHub issue</strong> titled with your
-      reminder message, marks it notified, commits that, and then <em>deliberately fails the run</em>.
+      reminder message, marks it notified, and commits that.
     </li>
     <li>
-      GitHub's own "workflow run failed" email notification fires because of that failure — nothing custom-built —
-      and GitHub's normal issue notifications fire for the new issue too.
+      GitHub's normal issue notifications fire for that new issue — that's the actual notification you'll see.
     </li>
   </ol>
 
-  <h2>Why both a failure email <em>and</em> an issue</h2>
+  <h2>The failure email is a backup, not a second copy</h2>
   <p>
-    GitHub does not let a workflow put custom text into that failure email's body — it can only say a run failed,
-    with a link. On its own, your actual reminder message would only be visible by clicking through to the failed
-    run and opening the <strong>Check reminders</strong> step's log. The issue exists to fix exactly that: it's a
-    real GitHub issue with your reminder message as the title and details in the body, so you see the actual
-    content directly in the notification instead of having to dig for it. Close the issue once you've handled it.
+    GitHub does not let a workflow put custom text into a "run failed" email's body — it can only say a run
+    failed, with a link. That's why the issue is the primary notification: it's a real GitHub issue with your
+    reminder message as the title and details in the body, so you see the actual content directly instead of
+    having to dig through a run's log. Close the issue once you've handled it.
   </p>
   <p>
-    If issue creation itself fails for some reason (a permissions hiccup, a rate limit), it logs a
-    <code>::warning::</code> and the run carries on normally — the failure email still fires either way, so you're
-    never silently missing a notification.
+    A separate workflow step only <em>deliberately fails the run</em> — triggering GitHub's built-in "workflow run
+    failed" email — when the issue itself couldn't be opened (a permissions hiccup, an API error). If the issue
+    opens fine, which is the normal case, the run stays green and you get exactly one notification, not two.
   </p>
   <p>
-    Also check <a href="https://github.com/settings/notifications" target="_blank" rel="noopener">github.com/settings/notifications</a>
-    → both the <strong>Actions</strong> and <strong>Issues</strong> sections have email/push notifications enabled
-    (usually on by default for repos you own) — otherwise GitHub won't notify you about either one.
+    Two separate GitHub settings gate whether any of this actually reaches you:
   </p>
+  <ul>
+    <li>
+      <a href="https://github.com/settings/notifications" target="_blank" rel="noopener">github.com/settings/notifications</a>
+      → the <strong>Watching</strong> and <strong>Actions</strong> rows should both have your preferred delivery
+      (Email and/or GitHub Mobile push) checked.
+    </li>
+    <li>
+      On the repo itself, the <strong>Watch</strong> button (top of the repo page, next to Star) — if it's on the
+      default <strong>"Participating and @mentions"</strong>, a new issue opened by <code>github-actions[bot]</code>
+      (not you) won't notify you at all, since you're neither the author nor mentioned. Switch it to
+      <strong>All Activity</strong> to actually receive these.
+    </li>
+  </ul>
 
   <h2>Content Queue's planned posts also show up here</h2>
   <p>

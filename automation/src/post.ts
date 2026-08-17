@@ -86,7 +86,7 @@ async function main() {
   // project.
   const forceProjectId = process.env['FORCE_PROJECT_ID'];
   const forceChannelId = process.env['FORCE_CHANNEL_ID'];
-  let anyFailure = false;
+  let anyIssueFailed = false; // only set when the failure-notification issue itself couldn't be opened -- that's what makes the run exit non-zero now
 
   for (const project of await loadProjects()) {
     if (forceProjectId && forceProjectId !== project.id) continue;
@@ -137,12 +137,12 @@ async function main() {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.log(`::error::[${project.id}/${channel.id}] FAILED to post "${postName}": ${message}`);
-        await openNotificationIssue(
+        const issueOpened = await openNotificationIssue(
           `❌ Post failed: ${project.name} / ${channel.id}`,
           postOutcomeBody(project, channel, postName, mediaType, media.length, publisherId, `**Error:** ${message}\n\n_Left in place in inbox/ -- nothing was moved, so this will be retried on the next run. Close this once handled._`),
           ['post-failure'],
         );
-        anyFailure = true;
+        if (!issueOpened) anyIssueFailed = true;
         continue; // don't abort the rest of this channel's turn or the other channels -- try again next run
       }
 
@@ -168,7 +168,7 @@ async function main() {
   }
 
   console.log('post complete');
-  if (anyFailure) {
+  if (anyIssueFailed) {
     process.exitCode = 1;
   }
 }

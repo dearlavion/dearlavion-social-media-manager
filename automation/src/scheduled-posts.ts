@@ -31,12 +31,13 @@ import { openNotificationIssue, openAndCloseNotificationIssue } from './github-i
  *     Drive and download it directly. Either way, once linked it falls
  *     through to publish immediately, same as an already-queued slot.
  *   - "planned" otherwise (nothing linked, no match found): log + notify
- *     once via GitHub's own workflow-failure email (same mechanism as
- *     reminders.ts), then stay quiet on later runs so it doesn't repeat
+ *     once via a GitHub issue (same mechanism as reminders.ts; the
+ *     workflow-failure email is only a backup for when the issue itself
+ *     fails to open), then stay quiet on later runs so it doesn't repeat
  *     every hour forever.
  */
 
-/** Opens a GitHub issue with the full context for one overdue slot -- see github-issues.ts for why, alongside the ::error:: annotation/failure email. */
+/** Opens a GitHub issue with the full context for one overdue slot -- see github-issues.ts for why, alongside the ::error:: annotation/failure email. Returns whether the issue was actually created. */
 function notifySlotIssue(
   title: string,
   project: Project,
@@ -44,7 +45,7 @@ function notifySlotIssue(
   channel: { id: string },
   slot: CampaignSlot,
   reason: string,
-): Promise<void> {
+): Promise<boolean> {
   const body = [
     `**Project:** ${project.name}`,
     `**Campaign:** ${campaign.name}`,
@@ -109,7 +110,7 @@ async function findInInbox(
 
 async function main() {
   const now = new Date();
-  let anyDueNotification = false; // also set on a publish failure below -- anything that should fail the run/trigger the email
+  let anyIssueFailed = false; // only set when a notification issue itself failed to open -- that's what triggers the backup failure-email now
 
   for (const project of await loadProjects()) {
     const channels = await loadChannels(project.id);
@@ -144,7 +145,7 @@ async function main() {
               const supported = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS].join(', ');
               const reason = `Expected file "${slot.expectedFileName}" has an unsupported extension (need one of ${supported}) -- rename it or pick a supported format.`;
               console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but ${reason}`);
-              await notifySlotIssue(
+              const issueOpened = await notifySlotIssue(
                 `📅 Scheduled post: unsupported file "${slot.expectedFileName}"`,
                 project,
                 campaign,
@@ -152,9 +153,9 @@ async function main() {
                 slot,
                 reason,
               );
+              if (!issueOpened) anyIssueFailed = true;
               slot.scheduledNotifiedAt = now.toISOString();
               campaignsDirty = true;
-              anyDueNotification = true;
             }
             continue;
           }
@@ -192,10 +193,10 @@ async function main() {
               : 'has no media linked';
             const reason = `Slot ${detail} -- link one in Content Queue.`;
             console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but ${detail} -- link one in Content Queue.`);
-            await notifySlotIssue(`📅 Scheduled post overdue: ${campaign.name} — ${slot.stage}`, project, campaign, channel, slot, reason);
+            const issueOpened = await notifySlotIssue(`📅 Scheduled post overdue: ${campaign.name} — ${slot.stage}`, project, campaign, channel, slot, reason);
+            if (!issueOpened) anyIssueFailed = true;
             slot.scheduledNotifiedAt = now.toISOString();
             campaignsDirty = true;
-            anyDueNotification = true;
           }
           continue;
         }
@@ -212,10 +213,10 @@ async function main() {
           if (!slot.scheduledNotifiedAt) {
             const reason = `Linked post "${slot.linkedPostPath}" has no media (missing, moved, or empty) -- relink it in Content Queue.`;
             console.log(`::error::📅 SCHEDULED POST DUE: ${label} is due but ${reason}`);
-            await notifySlotIssue(`📅 Scheduled post overdue: linked media missing`, project, campaign, channel, slot, reason);
+            const issueOpened = await notifySlotIssue(`📅 Scheduled post overdue: linked media missing`, project, campaign, channel, slot, reason);
+            if (!issueOpened) anyIssueFailed = true;
             slot.scheduledNotifiedAt = now.toISOString();
             campaignsDirty = true;
-            anyDueNotification = true;
           }
           continue;
         }
@@ -236,12 +237,12 @@ async function main() {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           console.log(`::error::${label}: FAILED to publish "${slot.linkedPostPath}": ${message}`);
-          await openNotificationIssue(
+          const issueOpened = await openNotificationIssue(
             `❌ Scheduled post failed: ${campaign.name} — ${slot.stage}`,
             publishOutcomeBody(project, channel, slot.linkedPostPath, mediaType, media.length, publisherId, `**Error:** ${message}\n\n_Left linked and queued -- this will be retried on the next run. Close this once handled._`),
             ['post-failure'],
           );
-          anyDueNotification = true;
+          if (!issueOpened) anyIssueFailed = true;
           continue; // leave it linked/queued so the next run retries it, and move on to the next slot
         }
 
@@ -268,8 +269,8 @@ async function main() {
   console.log('scheduled-posts complete');
 
   const githubOutput = process.env['GITHUB_OUTPUT'];
-  if (githubOutput && anyDueNotification) {
-    appendFileSync(githubOutput, 'due=true\n');
+  if (githubOutput && anyIssueFailed) {
+    appendFileSync(githubOutput, 'notify_failed=true\n');
   }
 }
 

@@ -61,39 +61,43 @@ async function closeIssue(issue: CreatedIssue): Promise<void> {
 }
 
 /**
- * Opens a GitHub issue as a richer, persistent companion to the "fail the
- * run so GitHub emails a notification" trick (reminders.ts / scheduled-posts.ts)
- * -- that email can't carry a custom body, only a link to the run's log.
- * This puts the actual message somewhere you'd naturally see it (GitHub's
- * own issue notifications, same settings page) and gives you something to
- * close once you've handled it. Left open -- for things that need your
- * attention (a reminder, a failed post, missing media).
+ * Opens a GitHub issue with the real message -- the richer notification
+ * channel now, since it can carry a custom title/body where the "fail the
+ * run so GitHub emails you" trick (reminders.ts / scheduled-posts.ts /
+ * post.ts) only ever linked to a log. Left open -- for things that need
+ * your attention (a reminder, a failed post, missing media).
  *
- * Deliberately non-throwing: creating this issue is a nice-to-have layered
- * on top of the notification that already works, so a permissions problem
- * or API hiccup here shouldn't take down the rest of the run.
+ * Returns whether the issue was actually created, so the caller can fail
+ * the run (and trigger that email) as a *backup* specifically for when
+ * this notification itself didn't get through -- not on every occurrence,
+ * now that the issue is the primary channel.
  */
-export async function openNotificationIssue(title: string, body: string, labels: string[]): Promise<void> {
+export async function openNotificationIssue(title: string, body: string, labels: string[]): Promise<boolean> {
   if (DRY_RUN) {
     console.log(`(dry run) would open issue "${title}" with labels [${labels.join(', ')}]`);
-    return;
+    return true;
   }
   const issue = await createIssue(title, body, labels);
-  if (issue) console.log(`Opened notification issue: ${issue.html_url}`);
+  if (!issue) return false;
+  console.log(`Opened notification issue: ${issue.html_url}`);
+  return true;
 }
 
 /**
  * Same as openNotificationIssue, but immediately closed -- for routine
  * confirmations (a post that published successfully) that should still
- * notify without piling up in the open-issues list over time.
+ * notify without piling up in the open-issues list over time. There's no
+ * backup-email path for these; a missed "it worked" confirmation isn't
+ * worth failing an otherwise-successful run over.
  */
-export async function openAndCloseNotificationIssue(title: string, body: string, labels: string[]): Promise<void> {
+export async function openAndCloseNotificationIssue(title: string, body: string, labels: string[]): Promise<boolean> {
   if (DRY_RUN) {
     console.log(`(dry run) would open+close issue "${title}" with labels [${labels.join(', ')}]`);
-    return;
+    return true;
   }
   const issue = await createIssue(title, body, labels);
-  if (!issue) return;
+  if (!issue) return false;
   console.log(`Opened notification issue: ${issue.html_url}`);
   await closeIssue(issue);
+  return true;
 }
