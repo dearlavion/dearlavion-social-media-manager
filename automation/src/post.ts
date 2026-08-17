@@ -9,9 +9,10 @@ import {
   repoRelativePath,
   inboxRoot,
 } from './config.js';
-import type { Campaign } from './config.js';
+import type { Campaign, Project } from './config.js';
 import { getPublisher } from './publishers/index.js';
 import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, findSlotByLinkedPath } from './post-helpers.js';
+import { openNotificationIssue, openAndCloseNotificationIssue } from './github-issues.js';
 
 /**
  * Picks the oldest post folder (still chronologically sortable by name)
@@ -46,6 +47,16 @@ async function nextPostFolder(projectId: string, channelId: string, campaigns: C
   return null;
 }
 
+function postOutcomeBody(project: Project, channel: { id: string; platform: string }, postName: string, mediaType: string, itemCount: number, publisherId: string, extra?: string): string {
+  return [
+    `**Project:** ${project.name}`,
+    `**Channel:** ${channel.id} (${channel.platform})`,
+    `**Post:** ${postName} (${mediaType}, ${itemCount} item(s))`,
+    `**Publisher:** ${publisherId}`,
+    ...(extra ? ['', extra] : []),
+  ].join('\n');
+}
+
 /**
  * If a Campaign slot was linked (by the admin UI) to the post folder that
  * just published, flips it to "posted". Mutates `campaigns` in place and
@@ -75,6 +86,7 @@ async function main() {
   // project.
   const forceProjectId = process.env['FORCE_PROJECT_ID'];
   const forceChannelId = process.env['FORCE_CHANNEL_ID'];
+  let anyFailure = false;
 
   for (const project of await loadProjects()) {
     if (forceProjectId && forceProjectId !== project.id) continue;
@@ -119,11 +131,30 @@ async function main() {
       console.log(
         `[${project.id}/${channel.id}] posting "${postName}" (${mediaType}, ${media.length} item(s)) to ${channel.platform} via ${publisherId}`,
       );
-      await publish({ media, caption, channel });
+
+      try {
+        await publish({ media, caption, channel });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.log(`::error::[${project.id}/${channel.id}] FAILED to post "${postName}": ${message}`);
+        await openNotificationIssue(
+          `❌ Post failed: ${project.name} / ${channel.id}`,
+          postOutcomeBody(project, channel, postName, mediaType, media.length, publisherId, `**Error:** ${message}\n\n_Left in place in inbox/ -- nothing was moved, so this will be retried on the next run. Close this once handled._`),
+          ['post-failure'],
+        );
+        anyFailure = true;
+        continue; // don't abort the rest of this channel's turn or the other channels -- try again next run
+      }
 
       const linkedPostPath = repoRelativePath(postDir);
       await movePosted(postDir, project.id, channel.id);
       channel.lastPostedAt = now.toISOString();
+
+      await openAndCloseNotificationIssue(
+        `✅ Posted: ${project.name} / ${channel.id}`,
+        postOutcomeBody(project, channel, postName, mediaType, media.length, publisherId),
+        ['post-success'],
+      );
 
       if (markLinkedCampaignSlotPosted(campaigns, linkedPostPath, now)) {
         campaignsDirty = true;
@@ -137,6 +168,9 @@ async function main() {
   }
 
   console.log('post complete');
+  if (anyFailure) {
+    process.exitCode = 1;
+  }
 }
 
 main().catch((err) => {

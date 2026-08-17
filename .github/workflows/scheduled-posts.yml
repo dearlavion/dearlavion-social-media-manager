@@ -37,7 +37,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run scheduled-posts
 
+      # if: always() -- a publish failure is caught inside scheduled-posts.ts
+      # itself (it moves on to the next slot rather than throwing), so this
+      # step normally still runs regardless; always() is just a safety net
+      # in case something outside that catch still crashes the script.
       - name: Commit posted state
+        if: always()
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: scheduled post run'

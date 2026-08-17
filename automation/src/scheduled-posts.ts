@@ -16,7 +16,7 @@ import { getPublisher } from './publishers/index.js';
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
 import { findFileByName } from './drive.js';
 import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
-import { openNotificationIssue } from './github-issues.js';
+import { openNotificationIssue, openAndCloseNotificationIssue } from './github-issues.js';
 
 /**
  * Runs alongside (not instead of) post.ts's interval-based FIFO posting.
@@ -56,6 +56,16 @@ function notifySlotIssue(
     '_Opened automatically by scheduled-posts.yml -- close this once handled._',
   ].join('\n');
   return openNotificationIssue(title, body, ['scheduled-post']);
+}
+
+function publishOutcomeBody(project: Project, channel: { id: string }, linkedPostPath: string, mediaType: string, itemCount: number, publisherId: string, extra?: string): string {
+  return [
+    `**Project:** ${project.name}`,
+    `**Channel:** ${channel.id}`,
+    `**Post:** ${linkedPostPath} (${mediaType}, ${itemCount} item(s))`,
+    `**Publisher:** ${publisherId}`,
+    ...(extra ? ['', extra] : []),
+  ].join('\n');
 }
 
 /** Every linkedPostPath already claimed by some slot in this project, so filename matching can't steal media reserved for a different post. */
@@ -99,7 +109,7 @@ async function findInInbox(
 
 async function main() {
   const now = new Date();
-  let anyDueNotification = false;
+  let anyDueNotification = false; // also set on a publish failure below -- anything that should fail the run/trigger the email
 
   for (const project of await loadProjects()) {
     const channels = await loadChannels(project.id);
@@ -220,7 +230,20 @@ async function main() {
         const mediaType = media.length === 1 ? media[0].type : 'carousel';
 
         console.log(`${label}: publishing "${slot.linkedPostPath}" (${mediaType}, ${media.length} item(s)) via ${publisherId}`);
-        await publish({ media, caption, channel });
+
+        try {
+          await publish({ media, caption, channel });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.log(`::error::${label}: FAILED to publish "${slot.linkedPostPath}": ${message}`);
+          await openNotificationIssue(
+            `❌ Scheduled post failed: ${campaign.name} — ${slot.stage}`,
+            publishOutcomeBody(project, channel, slot.linkedPostPath, mediaType, media.length, publisherId, `**Error:** ${message}\n\n_Left linked and queued -- this will be retried on the next run. Close this once handled._`),
+            ['post-failure'],
+          );
+          anyDueNotification = true;
+          continue; // leave it linked/queued so the next run retries it, and move on to the next slot
+        }
 
         await movePosted(postDir, project.id, channel.id);
         channel.lastPostedAt = now.toISOString();
@@ -229,6 +252,12 @@ async function main() {
         slot.status = 'posted';
         slot.postedAt = now.toISOString();
         campaignsDirty = true;
+
+        await openAndCloseNotificationIssue(
+          `✅ Scheduled post published: ${campaign.name} — ${slot.stage}`,
+          publishOutcomeBody(project, channel, slot.linkedPostPath, mediaType, media.length, publisherId),
+          ['post-success'],
+        );
       }
     }
 

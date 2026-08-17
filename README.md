@@ -112,6 +112,15 @@ Setting **both** a target date and a target time on a Planned post (Content Queu
 
 **Precision:** unlike the other workflows (hourly), `scheduled-posts.yml` runs every 5 minutes — a target time is acted on (published, or notified as missing media) within a few minutes of passing, not up to an hour late. GitHub's own failure-email notification fires immediately once that check run actually fails, so the only real delay is the up-to-~5-minute wait for the next check itself.
 
+## Post notifications
+
+Every actual publish attempt — from `post.ts`'s regular FIFO queue or `scheduled-posts.ts`'s time-scheduled slots — opens a GitHub issue either way:
+
+- **Success** — a `✅ Posted: ...` issue is opened and immediately closed, so it still shows up in GitHub's normal issue notifications without piling up in your open-issues list over time.
+- **Failure** (the publisher call throws — a Buffer error, a missing token, etc.) — a `❌ Post failed: ...` issue is opened and left open, with the actual error in the body. The post folder is left in place in `inbox/` (or the scheduled slot stays `queued`) rather than being moved/marked, so it's automatically retried on the workflow's next run. `post.ts` also sets its own exit code non-zero (and `scheduled-posts.ts` sets its `due` output) so GitHub's built-in "workflow run failed" email fires too, same as the other notification paths.
+
+**One channel's failure doesn't block the others** — each channel's post attempt is individually wrapped, so if channel A's post fails, channel B still gets its turn in the same run instead of the whole run aborting. The "commit posted state" step in both workflows runs with `if: always()` for the same reason: whatever *did* succeed this run should still get committed even if something else in the same run failed.
+
 ## Scheduler (personal reminders)
 
 **Scheduler** (admin UI, left menu) is a calendar for personal reminders, unrelated to any project — click a day, add a time and a message, **Save to GitHub**. `.github/workflows/reminders.yml` runs hourly; for any reminder whose date/time has passed and hasn't fired yet, it logs the message, opens a **GitHub issue** titled with the reminder text, marks it notified, commits `config/reminders.json`, and **deliberately fails the run** so GitHub's own built-in "workflow run failed" email notification also fires — no external email service, no new secret, no new API key (issue creation reuses the auto-generated `GITHUB_TOKEN` every Actions run already gets, scoped via each workflow's `permissions: issues: write`).
@@ -153,7 +162,7 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 
 ```
 .github/workflows/            sync-drive.yml, post.yml, scheduled-posts.yml, reminders.yml, deploy-admin-ui.yml
-automation/                   Node/TS scripts the workflows run (config, drive.ts, drive-sync-helpers.ts, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts)
+automation/                   Node/TS scripts the workflows run (config, drive.ts, drive-sync-helpers.ts, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts, github-issues.ts)
 config/projects.json          registry of every project -- [{id, name}]
 config/<projectId>/channels.json   that project's channels -- id, platform, enabled, Drive folder, Buffer channel, caption
 config/<projectId>/campaigns.json  that project's campaigns -- [{id, name, goal, slots: [{stage, channelId, status, linkedPostPath, ...}]}] (absent if none created yet)

@@ -232,6 +232,36 @@
     wait is for that next 5-minute check to happen.
   </p>
 
+  <h1 id="post-notifications">Post notifications (success and failure)</h1>
+  <p class="intro">
+    Every real publish attempt — whether from <code>post.yml</code>'s regular FIFO queue or
+    <code>scheduled-posts.yml</code>'s time-scheduled slots — opens a GitHub issue for the outcome, on top of
+    whatever's already logged in the run.
+  </p>
+  <h2>Success</h2>
+  <p>
+    A <code>✅ Posted: ...</code> issue is opened and <strong>immediately closed</strong>. You still get a GitHub
+    notification for it (opening any issue does that), it just doesn't sit in your open-issues list forever —
+    close it yourself if you'd rather, but there's no need to.
+  </p>
+  <h2>Failure</h2>
+  <p>
+    If the publisher call itself throws (a Buffer error, a missing token, whatever), a
+    <code>❌ Post failed: ...</code> issue is opened and <strong>left open</strong>, with the real error message in
+    the body. The post is left exactly where it was — still in <code>inbox/</code>, or still <code>queued</code> for
+    a scheduled slot — so it's automatically retried the next time that workflow runs, rather than silently lost.
+    The run itself also ends up marked failed (<code>post.ts</code> sets a non-zero exit code;
+    <code>scheduled-posts.ts</code> sets its <code>due</code> output), so GitHub's built-in failure email fires too
+    — the same double coverage as reminders and scheduled-post notifications.
+  </p>
+  <h2>One channel's failure doesn't block the others</h2>
+  <p>
+    Each channel's publish attempt is handled independently — if channel A fails, channel B still gets its turn in
+    that same run instead of the whole run aborting partway through. Both workflows' "commit posted state" step
+    also runs with <code>if: always()</code>, so whatever <em>did</em> succeed in a run still gets committed even
+    if something else in that same run failed.
+  </p>
+
   <h1>Using Campaigns</h1>
   <p class="intro">
     <strong>Campaigns</strong> (left menu) plans a push as an ordered sequence of posts and tracks where each one

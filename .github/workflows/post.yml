@@ -41,7 +41,12 @@ jobs:
           FORCE_CHANNEL_ID: ${{ github.event.inputs.channel_id }}
         run: npm run post
 
+      # if: always() -- post.ts now catches a failing channel's publish error
+      # and moves on to the next one instead of aborting, so other channels
+      # in this same run can still have succeeded even if the npm script's
+      # own exit code ends up non-zero because one of them failed.
       - name: Commit posted state
+        if: always()
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 'chore: post due channel(s)'
