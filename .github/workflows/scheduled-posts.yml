@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   check:
@@ -33,6 +34,7 @@ jobs:
         env:
           BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
           GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run scheduled-posts
 
       - name: Commit posted state
@@ -44,8 +46,10 @@ jobs:
       # Same pattern as reminders.yml: GitHub can't put custom text in its
       # own notification email, so this deliberately fails the run to
       # trigger GitHub's built-in "workflow run failed" email (Settings ->
-      # Notifications -> Actions must have failure emails enabled). The
-      # actual message is in the step log above, as a ::error:: annotation.
+      # Notifications -> Actions must have failure emails enabled) as a
+      # fast, guaranteed signal. The step above also opens a GitHub issue
+      # with the actual message, so you don't have to dig through this
+      # run's log to read it.
       - name: Fail so GitHub sends a notification email
         if: steps.check.outputs.due == 'true'
         run: |

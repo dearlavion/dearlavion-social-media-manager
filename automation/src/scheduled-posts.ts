@@ -11,11 +11,12 @@ import {
   inboxRoot,
   repoRelativePath,
 } from './config.js';
-import type { Campaign } from './config.js';
+import type { Campaign, CampaignSlot, Project } from './config.js';
 import { getPublisher } from './publishers/index.js';
 import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
 import { findFileByName } from './drive.js';
 import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
+import { openNotificationIssue } from './github-issues.js';
 
 /**
  * Runs alongside (not instead of) post.ts's interval-based FIFO posting.
@@ -34,6 +35,28 @@ import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
  *     reminders.ts), then stay quiet on later runs so it doesn't repeat
  *     every hour forever.
  */
+
+/** Opens a GitHub issue with the full context for one overdue slot -- see github-issues.ts for why, alongside the ::error:: annotation/failure email. */
+function notifySlotIssue(
+  title: string,
+  project: Project,
+  campaign: Campaign,
+  channel: { id: string },
+  slot: CampaignSlot,
+  reason: string,
+): Promise<void> {
+  const body = [
+    `**Project:** ${project.name}`,
+    `**Campaign:** ${campaign.name}`,
+    `**Stage:** ${slot.stage}`,
+    `**Channel:** ${channel.id}`,
+    `**Was due:** ${slot.targetDueAt}`,
+    `**Reason:** ${reason}`,
+    '',
+    '_Opened automatically by scheduled-posts.yml -- close this once handled._',
+  ].join('\n');
+  return openNotificationIssue(title, body, ['scheduled-post']);
+}
 
 /** Every linkedPostPath already claimed by some slot in this project, so filename matching can't steal media reserved for a different post. */
 function claimedPaths(campaigns: Campaign[]): Set<string> {
@@ -109,8 +132,15 @@ async function main() {
             // producing a confusing "no media" notification for a file that actually exists.
             if (!slot.scheduledNotifiedAt) {
               const supported = [...IMAGE_EXTENSIONS, ...VIDEO_EXTENSIONS].join(', ');
-              console.log(
-                `::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but expected file "${slot.expectedFileName}" has an unsupported extension (need one of ${supported}) -- rename it or pick a supported format.`,
+              const reason = `Expected file "${slot.expectedFileName}" has an unsupported extension (need one of ${supported}) -- rename it or pick a supported format.`;
+              console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but ${reason}`);
+              await notifySlotIssue(
+                `📅 Scheduled post: unsupported file "${slot.expectedFileName}"`,
+                project,
+                campaign,
+                channel,
+                slot,
+                reason,
               );
               slot.scheduledNotifiedAt = now.toISOString();
               campaignsDirty = true;
@@ -150,7 +180,9 @@ async function main() {
             const detail = slot.expectedFileName
               ? `expected file "${slot.expectedFileName}" not found in Drive yet`
               : 'has no media linked';
+            const reason = `Slot ${detail} -- link one in Content Queue.`;
             console.log(`::error::📅 SCHEDULED POST DUE: ${label} was due ${slot.targetDueAt} but ${detail} -- link one in Content Queue.`);
+            await notifySlotIssue(`📅 Scheduled post overdue: ${campaign.name} — ${slot.stage}`, project, campaign, channel, slot, reason);
             slot.scheduledNotifiedAt = now.toISOString();
             campaignsDirty = true;
             anyDueNotification = true;
@@ -168,9 +200,9 @@ async function main() {
         const media = await readPostMedia(postDir).catch(() => []); // folder may have been moved/deleted by hand since linking
         if (media.length === 0) {
           if (!slot.scheduledNotifiedAt) {
-            console.log(
-              `::error::📅 SCHEDULED POST DUE: ${label} is due but its linked post "${slot.linkedPostPath}" has no media (missing, moved, or empty) -- relink it in Content Queue.`,
-            );
+            const reason = `Linked post "${slot.linkedPostPath}" has no media (missing, moved, or empty) -- relink it in Content Queue.`;
+            console.log(`::error::📅 SCHEDULED POST DUE: ${label} is due but ${reason}`);
+            await notifySlotIssue(`📅 Scheduled post overdue: linked media missing`, project, campaign, channel, slot, reason);
             slot.scheduledNotifiedAt = now.toISOString();
             campaignsDirty = true;
             anyDueNotification = true;

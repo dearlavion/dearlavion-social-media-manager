@@ -1,12 +1,15 @@
 import { appendFileSync } from 'node:fs';
 import { loadReminders, saveReminders } from './config.js';
+import { openNotificationIssue } from './github-issues.js';
 
 /**
  * Finds reminders due by now, logs each one as a ::error:: annotation (so
- * it's visible at a glance on the Actions run page), marks them notified,
- * and saves. Does NOT exit non-zero itself -- that's a separate workflow
- * step conditioned on the "due" output this sets, so the commit of
- * notifiedAt always happens regardless of whether we go on to fail the job.
+ * it's visible at a glance on the Actions run page), opens a GitHub issue
+ * with the full message (the failure email below can't carry a custom
+ * body, only a link to this log), marks them notified, and saves. Does NOT
+ * exit non-zero itself -- that's a separate workflow step conditioned on
+ * the "due" output this sets, so the commit of notifiedAt always happens
+ * regardless of whether we go on to fail the job.
  */
 async function main() {
   const reminders = await loadReminders();
@@ -21,6 +24,11 @@ async function main() {
 
   for (const r of due) {
     console.log(`::error::⏰ REMINDER: ${r.message} (was due ${r.date} ${r.time})`);
+    await openNotificationIssue(
+      `⏰ Reminder: ${r.message}`,
+      `**Message:** ${r.message}\n**Was due:** ${r.date} ${r.time} (local)\n\n_Opened automatically by reminders.yml -- close this once handled._`,
+      ['reminder'],
+    );
     r.notifiedAt = now.toISOString();
   }
 

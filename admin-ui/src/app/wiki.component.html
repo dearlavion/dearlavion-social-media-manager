@@ -195,10 +195,10 @@
     </li>
     <li>
       If nothing is linked and nothing matches — it logs the message (naming the expected file if one was set),
-      marks the slot notified (so it won't repeat every hour), and <strong>deliberately fails the run</strong> so
-      GitHub's own "workflow run failed" email fires — the exact same mechanism the <a href="#reminders">Scheduler</a>
-      already uses, no new email service. Link media (or upload the expected file) before the target time to
-      avoid this.
+      opens a <strong>GitHub issue</strong> with the full detail, marks the slot notified (so it won't repeat every
+      run), and <strong>deliberately fails the run</strong> so GitHub's own "workflow run failed" email also fires —
+      the exact same mechanism the <a href="#reminders">Scheduler</a> already uses, no new email service. Link
+      media (or upload the expected file) before the target time to avoid this.
     </li>
   </ol>
   <h2>Naming a file ahead of time</h2>
@@ -299,8 +299,8 @@
   <h1 id="reminders">Using the Scheduler (reminders)</h1>
   <p class="intro">
     <strong>Scheduler</strong> (left menu) is a personal reminder calendar, unrelated to any project. It doesn't
-    send its own email — it reuses GitHub's built-in workflow-failure notification, since that's already something
-    GitHub emails you for free.
+    run its own notification service — it reuses two things GitHub already gives you for free: a workflow-failure
+    email, and issue notifications.
   </p>
 
   <h2>How it works</h2>
@@ -309,25 +309,32 @@
     <li>Click <strong>Save to GitHub</strong> — nothing is real until you save, same as everywhere else in this app.</li>
     <li>
       <code>.github/workflows/reminders.yml</code> runs every hour. If a reminder's date/time has passed and it
-      hasn't fired yet, the workflow logs it clearly, marks it notified, commits that, and then <em>deliberately
-      fails the run</em>.
+      hasn't fired yet, the workflow logs it clearly, <strong>opens a GitHub issue</strong> titled with your
+      reminder message, marks it notified, commits that, and then <em>deliberately fails the run</em>.
     </li>
     <li>
-      GitHub's own "workflow run failed" email notification fires because of that failure — nothing custom-built.
+      GitHub's own "workflow run failed" email notification fires because of that failure — nothing custom-built —
+      and GitHub's normal issue notifications fire for the new issue too.
     </li>
   </ol>
 
-  <h2>The one real limitation</h2>
+  <h2>Why both a failure email <em>and</em> an issue</h2>
   <p>
-    GitHub does not let a workflow put custom text into that notification email's body — it can only say a run
-    failed, with a link. Your actual reminder message is only visible by clicking through to the failed run and
-    opening the <strong>Check reminders</strong> step's log, where it's the first line, clearly marked. This is a
-    trade-off for using a free mechanism that already exists rather than adding a whole email-sending service.
+    GitHub does not let a workflow put custom text into that failure email's body — it can only say a run failed,
+    with a link. On its own, your actual reminder message would only be visible by clicking through to the failed
+    run and opening the <strong>Check reminders</strong> step's log. The issue exists to fix exactly that: it's a
+    real GitHub issue with your reminder message as the title and details in the body, so you see the actual
+    content directly in the notification instead of having to dig for it. Close the issue once you've handled it.
+  </p>
+  <p>
+    If issue creation itself fails for some reason (a permissions hiccup, a rate limit), it logs a
+    <code>::warning::</code> and the run carries on normally — the failure email still fires either way, so you're
+    never silently missing a notification.
   </p>
   <p>
     Also check <a href="https://github.com/settings/notifications" target="_blank" rel="noopener">github.com/settings/notifications</a>
-    → the <strong>Actions</strong> section has email notifications enabled (usually on by default for repos you
-    own) — otherwise GitHub won't email you about the failure at all.
+    → both the <strong>Actions</strong> and <strong>Issues</strong> sections have email/push notifications enabled
+    (usually on by default for repos you own) — otherwise GitHub won't notify you about either one.
   </p>
 
   <h2>Content Queue's planned posts also show up here</h2>
