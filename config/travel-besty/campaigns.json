@@ -27,10 +27,9 @@
         "status": "planned",
         "prepStatus": "todo",
         "targetDate": "2026-08-17",
-        "targetTime": "16:43",
-        "targetDueAt": "2026-08-17T08:43:00.000Z",
-        "expectedFileName": "doesnotexist",
-        "scheduledNotifiedAt": "2026-08-17T08:59:07.823Z"
+        "targetTime": "17:08",
+        "targetDueAt": "2026-08-17T09:08:00.000Z",
+        "expectedFileName": "doesnotexist"
       }
     ],
     "channelTargets": [
