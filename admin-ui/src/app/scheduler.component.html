@@ -5,17 +5,22 @@
       <p>
         Personal reminders, not tied to any project. The pipeline checks hourly and, when one comes due, fails a
         run on purpose so GitHub emails you its built-in "workflow run failed" notification -- see the Wiki for why.
+        The calendar also shows Content Queue's planned posts (from every project's ongoing campaigns) as a second
+        dot, read-only here -- edit those in Content Queue or Campaigns.
       </p>
     </div>
   </header>
 
   @if (!loaded) {
     <section class="card">
-      <div class="card-header"><h2>Reminders</h2></div>
+      <div class="card-header"><h2>Calendar</h2></div>
       <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
-        {{ loading ? 'Loading…' : 'Load reminders' }}
+        {{ loading ? 'Loading…' : 'Load calendar' }}
       </button>
-      <p class="hint">Uses the repo connection set on Dashboard/Set Up. Works with no token.</p>
+      <p class="hint">
+        Loads your reminders plus every project's planned Content Queue posts. Uses the repo connection set on
+        Dashboard/Set Up. Works with no token.
+      </p>
     </section>
   }
 
@@ -50,9 +55,14 @@
                 (click)="selectDate(cellDay.date)"
               >
                 <span class="day-number">{{ cellDay.day }}</span>
-                @if (cellDay.reminders.length > 0) {
-                  <span class="day-dot"></span>
-                }
+                <span class="day-dots">
+                  @if (cellDay.reminders.length > 0) {
+                    <span class="day-dot"></span>
+                  }
+                  @if (cellDay.scheduledContent.length > 0) {
+                    <span class="day-dot-content"></span>
+                  }
+                </span>
               </button>
             } @else {
               <div class="day-cell empty"></div>
@@ -80,6 +90,22 @@
             </li>
           }
         </ul>
+      }
+
+      @if (selectedDateScheduledContent.length > 0) {
+        <h3 class="subhead">Scheduled content</h3>
+        <ul class="scheduled-content-list">
+          @for (event of selectedDateScheduledContent; track event.slot.id) {
+            <li>
+              <span class="reminder-time">{{ event.slot.targetTime || 'All day' }}</span>
+              <span class="scheduled-content-body">
+                <span class="scheduled-content-campaign">{{ event.campaignName }} — {{ event.slot.stage }}</span>
+                <span class="scheduled-content-meta">{{ event.projectName }} · {{ event.channelId }}</span>
+              </span>
+            </li>
+          }
+        </ul>
+        <p class="hint">Read-only here -- edit these in Content Queue or Campaigns.</p>
       }
 
       <div class="add-reminder-row">

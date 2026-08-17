@@ -116,6 +116,8 @@ Setting **both** a target date and a target time on a Planned post (Content Queu
 
 **Scheduler** (admin UI, left menu) is a calendar for personal reminders, unrelated to any project — click a day, add a time and a message, **Save to GitHub**. `.github/workflows/reminders.yml` runs hourly; for any reminder whose date/time has passed and hasn't fired yet, it logs the message, marks it notified, commits `config/reminders.json`, and **deliberately fails the run** so GitHub's own built-in "workflow run failed" email notification fires — no external email service, no new secret.
 
+The calendar also shows a second dot for any day with Content Queue **Planned** posts — every `ongoing` campaign's `planned` slots with a `targetDate`, across every project, loaded alongside reminders. It's read-only here (no editing or linking); use Content Queue or Campaigns for that.
+
 The real limitation: GitHub doesn't let a workflow put custom text into that notification email's body, only a link to the run — the actual message is the first line of the failed run's **Check reminders** step log. Confirm **[github.com/settings/notifications](https://github.com/settings/notifications) → Actions** has failure emails enabled (usually on by default for repos you own).
 
 ## Settings (workflow schedules)

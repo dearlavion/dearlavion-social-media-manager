@@ -2,13 +2,23 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Reminder, newReminder } from './reminder.model';
+import { CampaignSlot } from './campaign.model';
 import { GithubConnection, GithubService } from './github.service';
+
+/** A Content Queue "Planned" slot surfaced on the calendar -- read-only here, edited in Content Queue/Campaigns. */
+interface ScheduledContentEvent {
+  projectName: string;
+  campaignName: string;
+  channelId: string;
+  slot: CampaignSlot;
+}
 
 interface CalendarDay {
   date: string;
   day: number;
   isToday: boolean;
   reminders: Reminder[];
+  scheduledContent: ScheduledContentEvent[];
 }
 
 function toDateKey(d: Date): string {
@@ -31,6 +41,7 @@ export class SchedulerComponent {
   readonly weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   reminders: Reminder[] = [];
+  scheduledContent: ScheduledContentEvent[] = [];
   sha: string | null = null;
   loaded = false;
   loading = false;
@@ -63,6 +74,14 @@ export class SchedulerComponent {
       remindersByDate.set(r.date, list);
     }
 
+    const contentByDate = new Map<string, ScheduledContentEvent[]>();
+    for (const event of this.scheduledContent) {
+      const date = event.slot.targetDate!;
+      const list = contentByDate.get(date) ?? [];
+      list.push(event);
+      contentByDate.set(date, list);
+    }
+
     const cells: (CalendarDay | null)[] = [];
     for (let i = 0; i < startWeekday; i++) cells.push(null);
     for (let day = 1; day <= daysInMonth; day++) {
@@ -72,6 +91,9 @@ export class SchedulerComponent {
         day,
         isToday: date === todayKey,
         reminders: (remindersByDate.get(date) ?? []).slice().sort((a, b) => a.time.localeCompare(b.time)),
+        scheduledContent: (contentByDate.get(date) ?? [])
+          .slice()
+          .sort((a, b) => (a.slot.targetTime ?? '').localeCompare(b.slot.targetTime ?? '')),
       });
     }
     while (cells.length % 7 !== 0) cells.push(null);
@@ -83,6 +105,12 @@ export class SchedulerComponent {
 
   get selectedDateReminders(): Reminder[] {
     return this.reminders.filter((r) => r.date === this.selectedDate).sort((a, b) => a.time.localeCompare(b.time));
+  }
+
+  get selectedDateScheduledContent(): ScheduledContentEvent[] {
+    return this.scheduledContent
+      .filter((event) => event.slot.targetDate === this.selectedDate)
+      .sort((a, b) => (a.slot.targetTime ?? '').localeCompare(b.slot.targetTime ?? ''));
   }
 
   get selectedDateLabel(): string {
@@ -117,16 +145,45 @@ export class SchedulerComponent {
     this.statusMessage = '';
     this.loading = true;
     try {
-      const { reminders, sha } = await this.github.loadReminders(this.connection);
+      const [{ reminders, sha }, scheduledContent] = await Promise.all([
+        this.github.loadReminders(this.connection),
+        this.loadScheduledContent(),
+      ]);
       this.reminders = reminders;
       this.sha = sha;
+      this.scheduledContent = scheduledContent;
       this.loaded = true;
-      this.statusMessage = `Loaded ${reminders.length} reminder(s).`;
+      this.statusMessage = `Loaded ${reminders.length} reminder(s) and ${scheduledContent.length} scheduled content queue item(s).`;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
       this.loading = false;
     }
+  }
+
+  /**
+   * Every Planned slot with a targetDate, across every project's ongoing
+   * campaigns -- exactly what Content Queue's own "Planned" list shows, so
+   * the calendar never surfaces something Content Queue itself wouldn't.
+   */
+  private async loadScheduledContent(): Promise<ScheduledContentEvent[]> {
+    const { projects } = await this.github.loadProjects(this.connection);
+    const perProject = await Promise.all(
+      projects.map(async (project) => {
+        const { campaigns } = await this.github.loadCampaigns(this.connection, project.id);
+        const events: ScheduledContentEvent[] = [];
+        for (const campaign of campaigns) {
+          if (campaign.status !== 'ongoing') continue;
+          for (const slot of campaign.slots) {
+            if (slot.status === 'planned' && slot.targetDate) {
+              events.push({ projectName: project.name, campaignName: campaign.name, channelId: slot.channelId, slot });
+            }
+          }
+        }
+        return events;
+      }),
+    );
+    return perProject.flat();
   }
 
   async save(): Promise<void> {
