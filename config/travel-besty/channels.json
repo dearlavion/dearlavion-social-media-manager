@@ -17,7 +17,7 @@
   {
     "id": "travel-besty-tiktok",
     "platform": "tiktok",
-    "enabled": false,
+    "enabled": true,
     "driveFolderId": "1dkpRsDwYv2ckHG2nactxf93ZgwR74L1I",
     "bufferChannelId": "6a831e0dccaf649a67c1da5f",
     "captionTemplate": "",
