@@ -278,7 +278,6 @@
                 <th>Id</th>
                 <th>Platform</th>
                 <th>Posting tool</th>
-                <th>Interval (h)</th>
                 <th>Drive folder ID</th>
                 <th>Buffer channel ID</th>
                 <th>IG post type</th>
@@ -305,7 +304,6 @@
                       }
                     </select>
                   </td>
-                  <td><input type="number" min="1" [(ngModel)]="channel.intervalHours" /></td>
                   <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
                   <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
                   <td>
@@ -345,8 +343,8 @@
           "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
           Buffer) — both immediately instead of waiting for their hourly cron, scoped to
           <strong>{{ selectedProject?.name ?? selectedProjectId }}</strong> only. The per-row
-          <strong>Post now</strong> does the same for just that one channel, ignoring its Enabled checkbox and
-          interval — no need to enable a channel just to test it. Either way it reads from what's already saved on
+          <strong>Post now</strong> does the same for just that one channel, ignoring its Enabled checkbox — no need
+          to enable a channel just to test it. Either way it reads from what's already saved on
           GitHub, not unsaved edits in this page — <strong>Save to GitHub first</strong> if you just changed
           something. Your token needs the <strong>Actions: read and write</strong> permission for these buttons, in
           addition to Contents. Can take up to a couple minutes; the status message above will update as each step

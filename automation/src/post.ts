@@ -6,7 +6,6 @@ import {
   saveChannels,
   loadCampaigns,
   saveCampaigns,
-  isDue,
   repoRelativePath,
   inboxRoot,
 } from './config.js';
@@ -18,10 +17,10 @@ import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, findSlot
  * Picks the oldest post folder (still chronologically sortable by name)
  * waiting in a channel's inbox, skipping any folder "reserved" by a
  * campaign slot with a future targetDueAt -- that one is scheduled-posts.ts's
- * job to publish at its own time, not this interval-based FIFO's to grab
- * early. A folder with no reservation, or one whose reserved time has
- * already passed (scheduled-posts.ts missed it, or it's simply overdue),
- * is fair game as normal.
+ * job to publish at its own time, not this FIFO's to grab early. A folder
+ * with no reservation, or one whose reserved time has already passed
+ * (scheduled-posts.ts missed it, or it's simply overdue), is fair game as
+ * normal.
  */
 async function nextPostFolder(projectId: string, channelId: string, campaigns: Campaign[], now: Date): Promise<string | null> {
   const dir = path.join(inboxRoot(projectId), channelId);
@@ -72,8 +71,8 @@ async function main() {
   const now = new Date();
   // Set by the admin UI's "Post now" buttons, to scope a run to one project
   // (and optionally force one specific channel within it, ignoring its
-  // enabled flag and due-check) instead of the default cron behavior of
-  // looping every project.
+  // enabled flag) instead of the default cron behavior of looping every
+  // project.
   const forceProjectId = process.env['FORCE_PROJECT_ID'];
   const forceChannelId = process.env['FORCE_CHANNEL_ID'];
 
@@ -87,14 +86,10 @@ async function main() {
     for (const channel of channels) {
       const forced = forceChannelId === channel.id;
       if (!channel.enabled && !forced) continue;
-      if (!forced && !isDue(channel, now)) {
-        console.log(`[${project.id}/${channel.id}] not due yet`);
-        continue;
-      }
 
       const postDir = await nextPostFolder(project.id, channel.id, campaigns, now);
       if (!postDir) {
-        console.log(`[${project.id}/${channel.id}] due, but inbox is empty (or everything in it is reserved for a scheduled post)`);
+        console.log(`[${project.id}/${channel.id}] inbox is empty (or everything in it is reserved for a scheduled post)`);
         continue;
       }
       const postName = path.basename(postDir);

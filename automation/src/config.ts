@@ -116,7 +116,6 @@ export interface ChannelConfig {
   id: string;
   platform: Platform;
   enabled: boolean;
-  intervalHours: number;
   driveFolderId: string;
   bufferChannelId: string;
   captionTemplate: string;
@@ -194,9 +193,6 @@ function assertValidChannel(projectId: string, value: unknown, index: number): a
   }
   if (typeof c.enabled !== 'boolean') {
     throw new Error(`${path} (${c.id}): "enabled" must be a boolean`);
-  }
-  if (typeof c.intervalHours !== 'number' || c.intervalHours < 1) {
-    throw new Error(`${path} (${c.id}): "intervalHours" must be a number >= 1`);
   }
   if (typeof c.driveFolderId !== 'string' || !c.driveFolderId) {
     throw new Error(`${path} (${c.id}): "driveFolderId" must be a non-empty string`);
@@ -277,12 +273,6 @@ export async function loadCampaigns(projectId: string): Promise<Campaign[]> {
 
 export async function saveCampaigns(projectId: string, campaigns: Campaign[]): Promise<void> {
   await writeFile(campaignsPath(projectId), JSON.stringify(campaigns, null, 2) + '\n', 'utf-8');
-}
-
-export function isDue(channel: ChannelConfig, now: Date): boolean {
-  if (!channel.lastPostedAt) return true;
-  const elapsedHours = (now.getTime() - new Date(channel.lastPostedAt).getTime()) / (1000 * 60 * 60);
-  return elapsedHours >= channel.intervalHours;
 }
 
 export const DRY_RUN = process.env['DRY_RUN'] === 'true';

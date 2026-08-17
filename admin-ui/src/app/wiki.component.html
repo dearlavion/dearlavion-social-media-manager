@@ -43,11 +43,10 @@
       <tr><th>Field</th><th>What it is</th></tr>
     </thead>
     <tbody>
-      <tr><td>Enabled</td><td>Whether the hourly cron should pick this channel up automatically. Leave unchecked while testing — the per-row Post now button ignores this anyway.</td></tr>
+      <tr><td>Enabled</td><td>Whether post.yml should post this channel's oldest queued item automatically every time it runs. Leave unchecked while testing — the per-row Post now button ignores this anyway.</td></tr>
       <tr><td>Id</td><td>A unique name for this channel within the project, e.g. <code>ig-main</code>.</td></tr>
       <tr><td>Platform</td><td>Label only, for your reference — the real destination is set by Posting tool + its ID field below.</td></tr>
       <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
-      <tr><td>Interval (h)</td><td>How many hours must pass since the last post before this channel is due again.</td></tr>
       <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls media from — the long id from the folder's share URL.</td></tr>
       <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>
       <tr><td>IG post type</td><td>Instagram only — post, story, or reel. Defaults to post.</td></tr>
@@ -96,8 +95,8 @@
     Two ways to trigger a post without waiting for the hourly cron, both requiring the token above:
   </p>
   <ul>
-    <li><strong>Post now</strong> (per channel row, next to Remove) — forces just that one channel, ignoring its Enabled checkbox and interval entirely. The fastest way to test a single new channel.</li>
-    <li><strong>Post now (all channels in …)</strong> — runs the same sync-then-post flow for every enabled, due channel in the currently selected project only.</li>
+    <li><strong>Post now</strong> (per channel row, next to Remove) — forces just that one channel, ignoring its Enabled checkbox entirely. The fastest way to test a single new channel.</li>
+    <li><strong>Post now (all channels in …)</strong> — runs the same sync-then-post flow for every enabled channel with something queued, in the currently selected project only.</li>
   </ul>
   <p>
     Either can take up to a couple of minutes — the status message at the top updates as each step (sync, then
@@ -125,9 +124,9 @@
       well under GitHub's 60/hr unauthenticated rate limit) <em>and</em> the project's campaigns.</li>
     <li>
       <strong>Synced</strong> lists queued posts with a media-type badge (<code>image</code>, <code>video</code>,
-      or <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and a rough
-      <strong>~estimated</strong> next-post time based on <code>lastPostedAt + intervalHours</code> — a real
-      <strong>Post now</strong> run or the hourly cron can shift it.
+      or <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and its position in that channel's
+      FIFO queue — the oldest one is tagged <strong>Posts next run</strong>, since each enabled channel's oldest
+      queued item goes out every time post.yml runs; a manual <strong>Post now</strong> can still jump the line.
     </li>
   </ol>
   <p>
@@ -287,7 +286,7 @@
   </p>
   <p>
     Campaigns are a planning/tracking layer only — they don't gate or reorder what actually posts. Each channel's
-    own <strong>Enabled</strong>/<strong>Interval (h)</strong> settings still decide that, same as always.
+    own <strong>Enabled</strong> setting still decides that, same as always.
   </p>
 
   <h2>Common gotcha</h2>

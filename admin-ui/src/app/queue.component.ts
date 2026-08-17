@@ -17,7 +17,8 @@ import {
 } from './campaign.model';
 
 interface QueuedPost extends InboxPost {
-  estimatedAt: Date;
+  /** 0-indexed position in this channel's FIFO queue -- 0 posts on the channel's next post.yml run. */
+  queuePosition: number;
 }
 
 @Component({
@@ -235,26 +236,11 @@ export class QueueComponent {
 
     const result = new Map<string, QueuedPost[]>();
     for (const [channelId, channelPosts] of byChannel) {
-      const channel = this.channels.find((c) => c.id === channelId);
-      const intervalHours = channel?.intervalHours ?? 24;
-      let cursor = this.firstEstimate(channel);
-
       result.set(
         channelId,
-        channelPosts.map((post) => {
-          const estimatedAt = new Date(cursor);
-          cursor += intervalHours * 60 * 60 * 1000;
-          return { ...post, estimatedAt };
-        }),
+        channelPosts.map((post, queuePosition) => ({ ...post, queuePosition })),
       );
     }
     return result;
-  }
-
-  private firstEstimate(channel: ChannelConfig | undefined): number {
-    const now = Date.now();
-    if (!channel?.lastPostedAt) return now;
-    const next = new Date(channel.lastPostedAt).getTime() + channel.intervalHours * 60 * 60 * 1000;
-    return Math.max(next, now);
   }
 }

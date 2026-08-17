@@ -1,6 +1,6 @@
 # dearlavion-social-media-manager
 
-Automates posting to Instagram, TikTok, and Facebook, each on its own schedule, across multiple **projects** (e.g. separate brands). Media is dropped into a Google Drive folder — a loose image/video becomes a single post, a subfolder becomes a carousel — and a GitHub Actions workflow syncs it into this repo. Another workflow posts the oldest un-posted item for each due channel via [Buffer](https://buffer.com), which holds the actual OAuth connection to each platform. A small admin UI (hosted on GitHub Pages) manages which projects and channels exist, how often they post, and shows a **Content Queue** of what's waiting to go out.
+Automates posting to Instagram, TikTok, and Facebook across multiple **projects** (e.g. separate brands). Media is dropped into a Google Drive folder — a loose image/video becomes a single post, a subfolder becomes a carousel — and a GitHub Actions workflow syncs it into this repo. Another workflow posts the oldest un-posted item for each enabled channel via [Buffer](https://buffer.com), which holds the actual OAuth connection to each platform. A small admin UI (hosted on GitHub Pages) manages which projects and channels exist and shows a **Content Queue** of what's waiting to go out.
 
 No server to host: everything runs as scheduled GitHub Actions workflows.
 
@@ -10,9 +10,9 @@ Each project keeps its own brand voice/content guide at `brand/<projectId>/voice
 
 1. **Projects**: `config/projects.json` lists every project as `{id, name}`. Each project has its own `config/<projectId>/channels.json`, `inbox/<projectId>/<channelId>/`, and `posted/<projectId>/<channelId>/` — fully separate on disk, so different projects can use different Drive folders and Buffer channels without colliding.
 2. **Sync** (`.github/workflows/sync-drive.yml`, hourly): for every project, for each of its enabled channels, lists new top-level entries in its configured Google Drive folder. A loose image/video file becomes one post; a **subfolder** becomes a carousel post from everything inside it (up to Instagram's 10-item cap). Each becomes its own post folder — `inbox/<projectId>/<channelId>/<postId>/<file(s)>` — committed into the repo. Any single file over ~90MB is skipped (logged clearly) to stay under GitHub's 100MB push limit.
-3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel whose `intervalHours` has elapsed since `lastPostedAt`, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`. Skips any folder reserved by a not-yet-due scheduled post (see below).
-4. **Scheduled posts** (`.github/workflows/scheduled-posts.yml`, every 5 min): publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval — see [Scheduled posts](#scheduled-posts).
-5. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, posting interval, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
+3. **Post** (`.github/workflows/post.yml`, hourly, offset 15 min after sync): for every project, for each enabled channel, posts the oldest post folder in `inbox/<projectId>/<channelId>/` — single image, video, or carousel, inferred from how many media files are in it — via that channel's **posting tool** (`publisher` field — Buffer is the only one implemented today; see `automation/src/publishers/`), then moves the whole folder to `posted/<projectId>/<channelId>/` and updates `lastPostedAt`. Skips any folder reserved by a not-yet-due scheduled post (see below), and does nothing if the inbox is empty.
+4. **Scheduled posts** (`.github/workflows/scheduled-posts.yml`, every 5 min): publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular FIFO queue — see [Scheduled posts](#scheduled-posts).
+5. **Admin UI** (`admin-ui/`, https://dearlavion.github.io/dearlavion-social-media-manager/): load a project first, then add/edit/enable its channels — platform, Drive folder, Buffer channel — by editing that project's `channels.json` directly on GitHub through your browser. The **Content Queue** view shows what's waiting in `inbox/` per channel before it posts; **Campaigns** plans an ordered sequence of posts and tracks each one against that plan.
 
 ### Why Buffer instead of each platform's API directly
 
@@ -57,13 +57,13 @@ Open the admin UI: **https://dearlavion.github.io/dearlavion-social-media-manage
 Loading works with no token at all, since the repo is public. To **Save**, create a project on **Set Up**, or use either **Post now** button, paste a **fine-grained GitHub PAT** scoped to this repo with both `Contents: read and write` and `Actions: read and write` permissions (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`).
 
 1. On the **Dashboard**, **Load projects**, then select an existing one — or go to **Set Up** (left menu) to create a new one (an id like `travel-besty` and a display name), which creates its `config/<id>/channels.json` and switches you back to the Dashboard with it selected. Set Up is also where the posting-tool connection instructions (Buffer today) live.
-2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `intervalHours`, `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`.
+2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`.
 
 **Media type is set by how you organize the Drive folder**, not a separate field: a loose image or video file at the top level becomes a single-item post; a **subfolder** becomes a carousel post from every image/video inside it (up to 10 items, Instagram's cap). To override the caption for one specific post, add a `caption.txt` file directly to that post's folder on GitHub (`inbox/<projectId>/<channelId>/<postId>/caption.txt`, after `sync-drive` has created it — Drive sync only picks up image/video files, so this one's added on the GitHub side, not from Drive) — it's used instead of the channel's `captionTemplate` and moves along with the rest of that post once published.
 
-The **Post now (all channels)** button runs `sync-drive.yml`, waits for it to finish, then runs `post.yml` — both immediately instead of waiting for their hourly cron, **scoped to the currently loaded project**. It still only syncs what's new in Drive and only posts channels whose `intervalHours` has actually elapsed; it doesn't force anything.
+The **Post now (all channels)** button runs `sync-drive.yml`, waits for it to finish, then runs `post.yml` — both immediately instead of waiting for their hourly cron, **scoped to the currently loaded project**. It still only syncs what's new in Drive and only posts enabled channels with something queued; it doesn't force anything.
 
-Each channel row also has its own **Post now** button, next to Remove — that one forces just that channel through the same sync-then-post flow, ignoring its Enabled checkbox and interval entirely. Use it to test a single channel without flipping it live first. All three (Save, both Post now buttons) read from what's already saved on GitHub, not unsaved edits in the page — Save first if you just changed something. Post now can take up to a couple minutes; the status message updates as each step completes.
+Each channel row also has its own **Post now** button, next to Remove — that one forces just that channel through the same sync-then-post flow, ignoring its Enabled checkbox entirely. Use it to test a single channel without flipping it live first. All three (Save, both Post now buttons) read from what's already saved on GitHub, not unsaved edits in the page — Save first if you just changed something. Post now can take up to a couple minutes; the status message updates as each step completes.
 
 If you ever want to run the admin UI locally instead: `cd admin-ui && npm install && npm start`, then open http://localhost:4201. (It redeploys to GitHub Pages automatically via `.github/workflows/deploy-admin-ui.yml` on every push to `main` that touches `admin-ui/`.)
 
@@ -75,7 +75,7 @@ Workflows run on their cron schedule automatically — across every project in `
 
 **Content Queue** (admin UI, left menu) has two sections per channel:
 
-- **Synced** — what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and an estimated next-post time from `lastPostedAt + intervalHours` (a rough estimate — **Post now** and manual runs can shift it). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit.
+- **Synced** — what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and its position in that channel's FIFO queue (the oldest is tagged "Posts next run," since an enabled channel's oldest queued item goes out every time `post.yml` runs). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit.
 - **Planned (ongoing campaigns)** — a lightweight content-planning checklist, sourced from every campaign whose **status is `ongoing`** (loaded alongside the tree). Add a planned post directly here (pick which ongoing campaign it belongs to, a stage, guidance, and an optional **target date + time**), edit or remove it, and toggle a **todo / done** prep-status chip tracking whether you've actually created that content yet — independent of whether it's synced or posted. The target-date dropdown is generated from that post's campaign's start/end dates (or the next 30 days if unset).
   - **Date only** stays a pure planning label (shown as a `📅` badge) — doesn't affect when anything posts.
   - **Date + time** turns the slot into a real scheduled post — see [Scheduled posts](#scheduled-posts) below.
@@ -92,7 +92,7 @@ Requires a project's channels to already be loaded on the Dashboard.
 - **Track it**: the campaign's detail view always surfaces a **"What to do next"** callout — the first slot that isn't posted yet, with its guidance. Once something matching that slot is synced from Drive, link it from the Content Queue's list of currently-queued posts (fetched the same way Content Queue does, via one Git Trees API call) — the slot flips to `queued`.
 - **Auto-completion**: when `post.yml` actually publishes a post whose folder is linked to a slot, `post.ts` flips that slot to `posted` and records the timestamp automatically — no manual bookkeeping once a post is linked. If a per-channel goal was set, the detail view shows actual posted count against it (e.g. "3/5 posted toward goal") — a progress readout only, nothing enforces it. Goals can be added, changed, or cleared later from the same detail view (**Set goal** / **Edit goal** next to each channel) — not just at creation time; setting a goal to 0 removes it. The detail view also has a **Status** dropdown (`open` / `ongoing` / `done`, shown on the campaign's card in the list too) and an **Edit dates** control for start/end — both purely descriptive, set by hand, not read by automation.
 
-This is a planning/tracking layer on top of the existing due-check engine — for a slot with no target time, campaigns don't gate or reorder what actually posts; `intervalHours`/`enabled` on each channel still decide that. A slot *with* a target date+time is the one exception — see below.
+This is a planning/tracking layer on top of the existing posting engine — for a slot with no target time, campaigns don't gate or reorder what actually posts; each channel's `enabled` flag still decides that. A slot *with* a target date+time is the one exception — see below.
 
 **Known limitation:** if a linked post is deleted or moved out of `inbox/` by hand instead of through the normal sync → post flow, its slot stays stuck on `queued` — nothing currently detects and clears a broken link.
 
@@ -130,7 +130,7 @@ The real limitation: GitHub doesn't let a workflow put custom text into that not
 
 ## Local development / dry runs
 
-Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or Buffer — useful for checking the due-check/file-picking logic without live credentials. They loop over every project in `config/projects.json` unless scoped:
+Both automation scripts respect `DRY_RUN=true`, which logs what would happen instead of calling Google Drive or Buffer — useful for checking the enabled/file-picking logic without live credentials. They loop over every project in `config/projects.json` unless scoped:
 
 ```bash
 cd automation
@@ -138,10 +138,10 @@ npm install
 DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager npm run sync-drive
 DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager npm run post
 
-# scoped to one project (still respects each channel's enabled/due-check):
+# scoped to one project (still respects each channel's enabled flag):
 DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_PROJECT_ID=travel-besty npm run post
 
-# force one specific channel within a project, ignoring enabled/due-check:
+# force one specific channel within a project, ignoring its enabled flag:
 DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_PROJECT_ID=travel-besty FORCE_CHANNEL_ID=travel-besty-instagram npm run post
 ```
 
@@ -151,7 +151,7 @@ DRY_RUN=true GITHUB_REPOSITORY=dearlavion/dearlavion-social-media-manager FORCE_
 .github/workflows/            sync-drive.yml, post.yml, scheduled-posts.yml, reminders.yml, deploy-admin-ui.yml
 automation/                   Node/TS scripts the workflows run (config, drive.ts, drive-sync-helpers.ts, post-helpers.ts, publishers/, scheduled-posts.ts, reminders.ts)
 config/projects.json          registry of every project -- [{id, name}]
-config/<projectId>/channels.json   that project's channels -- id, platform, interval, Drive folder, Buffer channel, caption
+config/<projectId>/channels.json   that project's channels -- id, platform, enabled, Drive folder, Buffer channel, caption
 config/<projectId>/campaigns.json  that project's campaigns -- [{id, name, goal, slots: [{stage, channelId, status, linkedPostPath, ...}]}] (absent if none created yet)
 config/reminders.json         personal reminders for the Scheduler -- [{id, date, time, dueAt, message, notifiedAt}]
 brand/<projectId>/voice.md    that project's brand voice/content guide

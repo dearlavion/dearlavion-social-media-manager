@@ -2,7 +2,7 @@
   <header class="topbar">
     <div class="greeting">
       <h1>Content Queue</h1>
-      <p>What's waiting in <code>inbox/</code> for each channel, oldest first, plus planned posts for ongoing campaigns. Next-post times are estimates -- Post now and manual runs can shift them.</p>
+      <p>What's waiting in <code>inbox/</code> for each channel, oldest first, plus planned posts for ongoing campaigns. Each enabled channel posts its oldest queued item every time post.yml runs.</p>
     </div>
   </header>
 
@@ -82,7 +82,9 @@
                       </div>
                     }
                   </div>
-                  <div class="queue-item-eta">~{{ post.estimatedAt | date: 'MMM d, h:mm a' }}</div>
+                  <div class="queue-item-eta">
+                    {{ post.queuePosition === 0 ? 'Posts next run' : '#' + (post.queuePosition + 1) + ' in queue' }}
+                  </div>
                 </div>
               }
             </div>

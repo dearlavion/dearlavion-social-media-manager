@@ -21,7 +21,6 @@ export interface ChannelConfig {
   id: string;
   platform: Platform;
   enabled: boolean;
-  intervalHours: number;
   driveFolderId: string;
   bufferChannelId: string;
   captionTemplate: string;
@@ -36,7 +35,6 @@ export function newChannel(): ChannelConfig {
     id: '',
     platform: 'facebook',
     enabled: false,
-    intervalHours: 6,
     driveFolderId: '',
     bufferChannelId: '',
     captionTemplate: '',
