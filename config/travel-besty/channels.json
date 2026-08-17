@@ -13,5 +13,17 @@
     "lastPostedAt": "2026-08-12T15:14:25.718Z",
     "instagramPostType": "post",
     "publisher": "buffer"
+  },
+  {
+    "id": "travel-besty-tiktok",
+    "platform": "tiktok",
+    "enabled": false,
+    "driveFolderId": "1dkpRsDwYv2ckHG2nactxf93ZgwR74L1I",
+    "bufferChannelId": "6a831e0dccaf649a67c1da5f",
+    "captionTemplate": "",
+    "syncedDriveFileIds": [],
+    "lastPostedAt": null,
+    "instagramPostType": "post",
+    "publisher": "buffer"
   }
 ]
