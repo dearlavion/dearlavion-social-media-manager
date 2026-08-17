@@ -220,7 +220,18 @@
       <button type="button" class="btn-ghost back-btn" (click)="openList()">← All campaigns</button>
 
       <section class="card">
-        <div class="card-header"><h2>{{ selectedCampaign.name }}</h2></div>
+        @if (!editingName) {
+          <div class="card-header campaign-name-header">
+            <h2>{{ selectedCampaign.name }}</h2>
+            <button type="button" class="btn-ghost" (click)="startEditName()">Rename</button>
+          </div>
+        } @else {
+          <div class="card-header campaign-name-header">
+            <input type="text" [(ngModel)]="editingNameValue" class="campaign-name-input" (keyup.enter)="saveEditName()" />
+            <button type="button" class="btn-ghost" (click)="saveEditName()" [disabled]="saving">Save</button>
+            <button type="button" class="btn-ghost" (click)="cancelEditName()">Cancel</button>
+          </div>
+        }
         <p class="hint">{{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}</p>
 
         <div class="meta-row">
@@ -245,6 +256,22 @@
             <button type="button" class="btn-ghost" (click)="cancelEditDates()">Cancel</button>
           }
         </div>
+
+        @if (!confirmingDelete) {
+          <button type="button" class="btn-danger delete-campaign-btn" (click)="startDeleteConfirm()">Delete campaign</button>
+        } @else {
+          <div class="delete-confirm">
+            <p class="delete-confirm-text">
+              Delete "{{ selectedCampaign.name }}"? This can't be undone.
+              @if (linkedSlotCount(selectedCampaign) > 0) {
+                {{ linkedSlotCount(selectedCampaign) }} post(s) already queued or published will lose their campaign
+                link (the synced/posted media itself is untouched).
+              }
+            </p>
+            <button type="button" class="btn-danger" (click)="confirmDelete()" [disabled]="saving">Yes, delete</button>
+            <button type="button" class="btn-ghost" (click)="cancelDelete()">Cancel</button>
+          </div>
+        }
 
         @if (channelProgress(selectedCampaign).length > 0) {
           <div class="goal-list">

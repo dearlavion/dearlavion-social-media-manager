@@ -77,6 +77,13 @@ export class CampaignComponent {
   editingStartDate = '';
   editingEndDate = '';
 
+  // Renaming an existing campaign, in detail mode
+  editingName = false;
+  editingNameValue = '';
+
+  // Deleting an existing campaign, in detail mode
+  confirmingDelete = false;
+
   constructor(private readonly github: GithubService) {}
 
   get selectedCampaign(): Campaign | undefined {
@@ -197,6 +204,8 @@ export class CampaignComponent {
     this.errorMessage = '';
     this.editingGoalChannelId = null;
     this.editingDates = false;
+    this.editingName = false;
+    this.confirmingDelete = false;
     if (!this.inboxLoaded) {
       void this.loadInbox();
     }
@@ -349,5 +358,53 @@ export class CampaignComponent {
     campaign.endDate = this.editingEndDate || null;
     this.editingDates = false;
     await this.save();
+  }
+
+  // --- detail: renaming an existing campaign ---
+
+  startEditName(): void {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    this.editingNameValue = campaign.name;
+    this.editingName = true;
+  }
+
+  cancelEditName(): void {
+    this.editingName = false;
+  }
+
+  async saveEditName(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    const name = this.editingNameValue.trim();
+    if (!campaign || !name) return;
+    campaign.name = name;
+    this.editingName = false;
+    await this.save();
+  }
+
+  // --- detail: deleting an existing campaign ---
+
+  /** Slots with real-world consequences (media queued or already published) -- surfaced in the delete confirmation, since planned-only slots have none. */
+  linkedSlotCount(campaign: Campaign): number {
+    return campaign.slots.filter((s) => s.status === 'queued' || s.status === 'posted').length;
+  }
+
+  startDeleteConfirm(): void {
+    this.confirmingDelete = true;
+  }
+
+  cancelDelete(): void {
+    this.confirmingDelete = false;
+  }
+
+  async confirmDelete(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    this.campaigns = this.campaigns.filter((c) => c.id !== campaign.id);
+    this.confirmingDelete = false;
+    await this.save();
+    if (!this.errorMessage) {
+      this.openList();
+    }
   }
 }

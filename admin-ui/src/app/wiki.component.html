@@ -311,9 +311,16 @@
   </p>
   <p>
     The detail view also has a <strong>Status</strong> dropdown (<code>open</code> / <code>ongoing</code> /
-    <code>done</code> — also shown as a badge on the campaign's card back in the list) and an
-    <strong>Edit dates</strong> control for the start/end dates you set in step 1. Both are purely descriptive —
-    set by hand whenever you like, nothing in automation reads or acts on either one.
+    <code>done</code> — also shown as a badge on the campaign's card back in the list), an
+    <strong>Edit dates</strong> control for the start/end dates you set in step 1, and a <strong>Rename</strong>
+    control next to the campaign's name. All three are purely descriptive — set by hand whenever you like, nothing
+    in automation reads or acts on any of them.
+  </p>
+  <p>
+    <strong>Delete campaign</strong> removes it entirely, after a confirmation step. If any of its slots are
+    already <code>queued</code> or <code>posted</code>, the confirmation says so — deleting the campaign drops
+    those slots' link back to it, but doesn't touch the actual media sitting in <code>inbox/</code> or
+    <code>posted/</code>. There's no undo, so double-check before confirming.
   </p>
   <p>
     Campaigns are a planning/tracking layer only — they don't gate or reorder what actually posts. Each channel's
