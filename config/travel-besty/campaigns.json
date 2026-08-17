@@ -29,7 +29,8 @@
         "targetDate": "2026-08-17",
         "targetTime": "21:17",
         "targetDueAt": "2026-08-17T13:17:00.000Z",
-        "expectedFileName": "doesnotexist"
+        "expectedFileName": "doesnotexist",
+        "scheduledNotifiedAt": "2026-08-17T13:45:38.736Z"
       }
     ],
     "channelTargets": [
