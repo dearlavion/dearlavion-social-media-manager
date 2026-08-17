@@ -22,15 +22,14 @@
       {
         "id": "0884a5aa-822c-4e6e-b68c-2400ce6d0042",
         "stage": "awareness",
-        "guidance": "Test post caption",
+        "guidance": "Fail test PASSED",
         "channelId": "travel-besty-instagram",
         "status": "planned",
         "prepStatus": "todo",
         "targetDate": "2026-08-17",
-        "targetTime": "17:11",
-        "targetDueAt": "2026-08-17T09:11:00.000Z",
-        "expectedFileName": "doesnotexist",
-        "scheduledNotifiedAt": "2026-08-17T09:50:45.351Z"
+        "targetTime": "21:17",
+        "targetDueAt": "2026-08-17T13:17:00.000Z",
+        "expectedFileName": "doesnotexist"
       }
     ],
     "channelTargets": [
