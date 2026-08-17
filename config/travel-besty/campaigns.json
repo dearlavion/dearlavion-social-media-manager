@@ -27,8 +27,8 @@
         "status": "planned",
         "prepStatus": "todo",
         "targetDate": "2026-08-17",
-        "targetTime": "17:08",
-        "targetDueAt": "2026-08-17T09:08:00.000Z",
+        "targetTime": "17:11",
+        "targetDueAt": "2026-08-17T09:11:00.000Z",
         "expectedFileName": "doesnotexist"
       }
     ],
