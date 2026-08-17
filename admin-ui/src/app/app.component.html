@@ -280,7 +280,6 @@
                 <th>Posting tool</th>
                 <th>Drive folder ID</th>
                 <th>Buffer channel ID</th>
-                <th>IG post type</th>
                 <th>Caption template</th>
                 <th></th>
               </tr>
@@ -306,17 +305,6 @@
                   </td>
                   <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
                   <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
-                  <td>
-                    @if (channel.platform === 'instagram') {
-                      <select [(ngModel)]="channel.instagramPostType">
-                        @for (t of instagramPostTypes; track t) {
-                          <option [value]="t">{{ t }}</option>
-                        }
-                      </select>
-                    } @else {
-                      <span class="muted">—</span>
-                    }
-                  </td>
                   <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
                   <td class="row-actions">
                     <button type="button" class="btn-ghost" (click)="postChannelNow(channel)" [disabled]="busy">

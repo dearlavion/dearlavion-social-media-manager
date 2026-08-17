@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChannelConfig, Project, PLATFORMS, INSTAGRAM_POST_TYPES, PUBLISHERS, newChannel } from './channel.model';
+import { ChannelConfig, Project, PLATFORMS, PUBLISHERS, newChannel } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 import { WikiComponent } from './wiki.component';
 import { SchedulerComponent } from './scheduler.component';
@@ -28,7 +28,6 @@ const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
 })
 export class AppComponent implements OnInit {
   readonly platforms = PLATFORMS;
-  readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
   readonly publishers = PUBLISHERS;
 
   view: 'dashboard' | 'wiki' | 'setup' | 'scheduler' | 'queue' | 'campaigns' | 'settings' = 'dashboard';
@@ -181,11 +180,9 @@ export class AppComponent implements OnInit {
     this.loading = true;
     try {
       const { channels, sha } = await this.github.loadChannels(this.connection, this.selectedProjectId);
-      // Backfill for channels saved before instagramPostType/publisher existed,
-      // so the dropdowns show the same defaults the automation actually uses.
+      // Backfill for channels saved before publisher existed, so the dropdown shows the same default the automation actually uses.
       this.channels = channels.map((c) => ({
         ...c,
-        instagramPostType: c.platform === 'instagram' ? (c.instagramPostType ?? 'post') : c.instagramPostType,
         publisher: c.publisher ?? 'buffer',
       }));
       this.sha = sha;

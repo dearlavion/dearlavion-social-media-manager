@@ -120,6 +120,16 @@
                         Expected Drive file name (optional)
                         <input [(ngModel)]="editingPlannedExpectedFileName" placeholder="e.g. IMG_1234.jpg" />
                       </label>
+                      @if (isInstagramChannel(target.slot.channelId)) {
+                        <label class="post-type-label">
+                          Instagram post type
+                          <select [(ngModel)]="editingPlannedInstagramPostType">
+                            @for (t of instagramPostTypes; track t) {
+                              <option [value]="t">{{ t }}</option>
+                            }
+                          </select>
+                        </label>
+                      }
                       @if (editingPlannedTargetDate && editingPlannedTargetTime) {
                         <p class="hint">
                           Scheduled — the scheduled-posts run (every 5 min) will publish this automatically once media is
@@ -146,6 +156,9 @@
                     }
                     @if (target.slot.expectedFileName) {
                       <span class="expected-filename-badge">📄 {{ target.slot.expectedFileName }}</span>
+                    }
+                    @if (target.slot.instagramPostType) {
+                      <span class="post-type-badge">{{ target.slot.instagramPostType }}</span>
                     }
                     <button
                       type="button"
@@ -211,6 +224,16 @@
                   Expected Drive file name (optional)
                   <input [(ngModel)]="newPlannedExpectedFileName" placeholder="e.g. IMG_1234.jpg" />
                 </label>
+                @if (isInstagramChannel(channel.id)) {
+                  <label>
+                    Instagram post type
+                    <select [(ngModel)]="newPlannedInstagramPostType">
+                      @for (t of instagramPostTypes; track t) {
+                        <option [value]="t">{{ t }}</option>
+                      }
+                    </select>
+                  </label>
+                }
               </div>
               @if (newPlannedTargetDate && newPlannedTargetTime) {
                 <p class="hint">

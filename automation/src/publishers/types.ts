@@ -1,4 +1,4 @@
-import type { ChannelConfig } from '../config.js';
+import type { ChannelConfig, InstagramPostType } from '../config.js';
 
 export interface PostMedia {
   type: 'image' | 'video';
@@ -10,6 +10,8 @@ export interface PublishParams {
   media: PostMedia[];
   caption: string;
   channel: ChannelConfig;
+  /** Only meaningful when channel.platform is "instagram" -- set per campaign slot, not per channel. Defaults to "post" when absent. */
+  instagramPostType?: InstagramPostType;
 }
 
 export type PublishFn = (params: PublishParams) => Promise<void>;

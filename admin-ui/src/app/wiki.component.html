@@ -49,7 +49,6 @@
       <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
       <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls media from — the long id from the folder's share URL.</td></tr>
       <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>
-      <tr><td>IG post type</td><td>Instagram only — post, story, or reel. Defaults to post.</td></tr>
       <tr><td>Caption template</td><td>Default caption text for every post on this channel, unless a post's folder has its own <code>caption.txt</code> (see below).</td></tr>
     </tbody>
   </table>
@@ -146,6 +145,13 @@
       your own), guidance, and optionally a <strong>target date and time</strong> — creates a new slot on that
       campaign directly, without going through the builder.</li>
     <li><strong>Edit</strong> a planned post's stage/guidance/target date/time inline, or <strong>Remove</strong> it entirely.</li>
+    <li>
+      For an <strong>Instagram</strong> channel, an <strong>Instagram post type</strong> dropdown (post / story / reel)
+      also appears — this replaces the old channel-level default entirely, since different planned posts on the same
+      channel often need different types (a reel for one, a regular post for another). It's set per slot, defaults
+      to "post" if left alone, and is what actually gets sent to Buffer once this slot publishes — whether that's
+      through the regular queue or a scheduled time.
+    </li>
     <li>
       The <strong>target date</strong> dropdown is populated from that post's campaign — every day from its
       start to end date if both are set (e.g. "Sun, Aug 16"), or the next 30 days from today if the campaign has

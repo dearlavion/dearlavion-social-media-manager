@@ -7,7 +7,7 @@ export type Platform = 'instagram' | 'tiktok' | 'facebook';
 
 export const PLATFORMS: Platform[] = ['instagram', 'tiktok', 'facebook'];
 
-/** Only meaningful when platform is "instagram" -- Buffer requires this on every Instagram post. */
+/** Only meaningful when platform is "instagram" -- Buffer requires this on every Instagram post. Set per Content Queue planned post (CampaignSlot), not per channel. */
 export type InstagramPostType = 'post' | 'story' | 'reel';
 
 export const INSTAGRAM_POST_TYPES: InstagramPostType[] = ['post', 'story', 'reel'];
@@ -26,7 +26,6 @@ export interface ChannelConfig {
   captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
-  instagramPostType?: InstagramPostType;
   publisher?: Publisher;
 }
 
@@ -40,7 +39,6 @@ export function newChannel(): ChannelConfig {
     captionTemplate: '',
     syncedDriveFileIds: [],
     lastPostedAt: null,
-    instagramPostType: 'post',
     publisher: 'buffer',
   };
 }

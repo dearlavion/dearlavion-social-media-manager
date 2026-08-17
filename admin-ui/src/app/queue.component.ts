@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ChannelConfig, Project } from './channel.model';
+import { ChannelConfig, INSTAGRAM_POST_TYPES, InstagramPostType, Project } from './channel.model';
 import { GithubConnection, GithubService } from './github.service';
 import { InboxPost, parseInboxTree } from './inbox-tree.util';
 import {
@@ -35,6 +35,7 @@ export class QueueComponent {
   @Input() channelsLoaded = false;
 
   readonly defaultStages = DEFAULT_STAGES;
+  readonly instagramPostTypes = INSTAGRAM_POST_TYPES;
 
   loading = false;
   loaded = false;
@@ -54,6 +55,7 @@ export class QueueComponent {
   newPlannedTargetDate = '';
   newPlannedTargetTime = '';
   newPlannedExpectedFileName = '';
+  newPlannedInstagramPostType: InstagramPostType = 'post';
 
   // Editing an existing planned post inline.
   editingPlannedSlotId: string | null = null;
@@ -62,6 +64,7 @@ export class QueueComponent {
   editingPlannedTargetDate = '';
   editingPlannedTargetTime = '';
   editingPlannedExpectedFileName = '';
+  editingPlannedInstagramPostType: InstagramPostType = 'post';
 
   constructor(private readonly github: GithubService) {}
 
@@ -101,6 +104,11 @@ export class QueueComponent {
   dateOptionsForCampaign(campaignId: string): string[] {
     const campaign = this.campaigns.find((c) => c.id === campaignId);
     return campaign ? campaignDateOptions(campaign) : [];
+  }
+
+  /** Instagram post type only makes sense for an Instagram channel -- Buffer ignores it (and rejects the field) for other platforms. */
+  isInstagramChannel(channelId: string): boolean {
+    return this.channels.find((c) => c.id === channelId)?.platform === 'instagram';
   }
 
   async load(): Promise<void> {
@@ -152,6 +160,7 @@ export class QueueComponent {
     this.newPlannedTargetDate = '';
     this.newPlannedTargetTime = '';
     this.newPlannedExpectedFileName = '';
+    this.newPlannedInstagramPostType = 'post';
   }
 
   cancelAddPlanned(): void {
@@ -178,6 +187,9 @@ export class QueueComponent {
     if (this.newPlannedExpectedFileName.trim()) {
       slot.expectedFileName = this.newPlannedExpectedFileName.trim();
     }
+    if (this.isInstagramChannel(channelId)) {
+      slot.instagramPostType = this.newPlannedInstagramPostType;
+    }
     campaign.slots = [...campaign.slots, slot];
     this.addingPlannedForChannel = null;
     await this.saveCampaigns();
@@ -192,6 +204,7 @@ export class QueueComponent {
     this.editingPlannedTargetDate = slot.targetDate ?? '';
     this.editingPlannedTargetTime = slot.targetTime ?? '';
     this.editingPlannedExpectedFileName = slot.expectedFileName ?? '';
+    this.editingPlannedInstagramPostType = slot.instagramPostType ?? 'post';
   }
 
   cancelEditPlanned(): void {
@@ -213,6 +226,7 @@ export class QueueComponent {
     }
     slot.targetDueAt = newTargetDueAt;
     slot.expectedFileName = this.editingPlannedExpectedFileName.trim() || undefined;
+    slot.instagramPostType = this.isInstagramChannel(slot.channelId) ? this.editingPlannedInstagramPostType : undefined;
     this.editingPlannedSlotId = null;
     await this.saveCampaigns();
   }

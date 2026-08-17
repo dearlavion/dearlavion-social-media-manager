@@ -69,7 +69,7 @@ async function bufferGraphQL<T>(query: string, variables: Record<string, unknown
  * than adding to Buffer's own queue, since our GitHub Actions cron is
  * already the thing deciding *when* to post.
  */
-export const publish: PublishFn = async ({ media, caption, channel }) => {
+export const publish: PublishFn = async ({ media, caption, channel, instagramPostType }) => {
   if (!channel.bufferChannelId) {
     throw new Error(`Channel "${channel.id}" has no bufferChannelId configured`);
   }
@@ -79,10 +79,12 @@ export const publish: PublishFn = async ({ media, caption, channel }) => {
 
   // Instagram requires an explicit post type (post/story/reel) plus
   // shouldShareToFeed -- both are non-optional in Buffer's schema, even
-  // though only "reel" really has a meaningful choice here.
+  // though only "reel" really has a meaningful choice here. Set per
+  // campaign slot (Content Queue), not per channel -- defaults to "post"
+  // for a synced post with no linked slot.
   const metadata =
     channel.platform === 'instagram'
-      ? { instagram: { type: channel.instagramPostType ?? 'post', shouldShareToFeed: true } }
+      ? { instagram: { type: instagramPostType ?? 'post', shouldShareToFeed: true } }
       : undefined;
 
   const assets = media.map(toBufferAsset);

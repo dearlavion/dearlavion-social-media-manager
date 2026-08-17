@@ -1,3 +1,5 @@
+import type { InstagramPostType } from './channel.model';
+
 export type CampaignSlotStatus = 'planned' | 'queued' | 'posted';
 
 function toDateKey(d: Date): string {
@@ -45,6 +47,8 @@ export interface CampaignSlot {
   scheduledNotifiedAt?: string;
   /** Exact Drive filename this slot is waiting for -- only acted on by scheduled-posts.ts, and only alongside targetDueAt. */
   expectedFileName?: string;
+  /** Only meaningful when the slot's channel is Instagram -- Buffer requires this on every Instagram post. Defaults to "post" at publish time when unset. */
+  instagramPostType?: InstagramPostType;
   linkedPostPath?: string;
   postedAt?: string;
 }

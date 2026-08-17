@@ -127,13 +127,15 @@ async function main() {
       const publisherId = channel.publisher ?? 'buffer';
       const publish = getPublisher(publisherId);
       const mediaType = media.length === 1 ? media[0].type : 'carousel';
+      // A regular synced post isn't necessarily linked to a campaign slot -- falls through to buffer.ts's own "post" default when there's no slot (or the slot didn't set one).
+      const linkedSlot = findSlotByLinkedPath(campaigns, repoRelativePath(postDir));
 
       console.log(
         `[${project.id}/${channel.id}] posting "${postName}" (${mediaType}, ${media.length} item(s)) to ${channel.platform} via ${publisherId}`,
       );
 
       try {
-        await publish({ media, caption, channel });
+        await publish({ media, caption, channel, instagramPostType: linkedSlot?.instagramPostType });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.log(`::error::[${project.id}/${channel.id}] FAILED to post "${postName}": ${message}`);

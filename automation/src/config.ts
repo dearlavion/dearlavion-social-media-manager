@@ -64,6 +64,8 @@ export interface CampaignSlot {
   scheduledNotifiedAt?: string;
   /** Exact Drive filename this slot is waiting for -- only acted on by scheduled-posts.ts, and only alongside targetDueAt. */
   expectedFileName?: string;
+  /** Only meaningful when the slot's channel is Instagram -- Buffer requires this on every Instagram post. Defaults to "post" at publish time when unset. */
+  instagramPostType?: InstagramPostType;
   linkedPostPath?: string;
   postedAt?: string;
 }
@@ -121,7 +123,6 @@ export interface ChannelConfig {
   captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
-  instagramPostType?: InstagramPostType;
   publisher?: Publisher;
 }
 
@@ -200,9 +201,6 @@ function assertValidChannel(projectId: string, value: unknown, index: number): a
   if (c.enabled && (typeof c.bufferChannelId !== 'string' || !c.bufferChannelId)) {
     throw new Error(`${path} (${c.id}): "bufferChannelId" must be a non-empty string when enabled`);
   }
-  if (c.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(c.instagramPostType)) {
-    throw new Error(`${path} (${c.id}): invalid "instagramPostType" "${c.instagramPostType}"`);
-  }
   if (c.publisher !== undefined && !['buffer'].includes(c.publisher)) {
     throw new Error(`${path} (${c.id}): invalid "publisher" "${c.publisher}"`);
   }
@@ -243,6 +241,9 @@ function assertValidCampaign(projectId: string, value: unknown, index: number): 
     }
     if (s.targetDueAt !== undefined && Number.isNaN(new Date(s.targetDueAt).getTime())) {
       throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): "targetDueAt" must be a valid ISO datetime string when present`);
+    }
+    if (s.instagramPostType !== undefined && !['post', 'story', 'reel'].includes(s.instagramPostType)) {
+      throw new Error(`${path} (${c.id}).slots[${i}] (${s.id}): invalid "instagramPostType" "${s.instagramPostType}"`);
     }
   });
   // Older/hand-edited campaigns.json may predate these fields -- normalized below rather than required here.

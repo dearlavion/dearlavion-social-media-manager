@@ -233,7 +233,7 @@ async function main() {
         console.log(`${label}: publishing "${slot.linkedPostPath}" (${mediaType}, ${media.length} item(s)) via ${publisherId}`);
 
         try {
-          await publish({ media, caption, channel });
+          await publish({ media, caption, channel, instagramPostType: slot.instagramPostType });
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           console.log(`::error::${label}: FAILED to publish "${slot.linkedPostPath}": ${message}`);
