@@ -8,18 +8,6 @@
     "createdAt": "2026-08-15T03:58:33.958Z",
     "slots": [
       {
-        "id": "13d7bc91-9865-49e9-942f-88bdcab6e39e",
-        "stage": "awareness",
-        "guidance": "Hello!",
-        "channelId": "travel-besty-instagram",
-        "status": "planned",
-        "targetDate": "2026-08-16",
-        "targetTime": "22:00",
-        "targetDueAt": "2026-08-16T14:00:00.000Z",
-        "expectedFileName": "TravelBesty_logo",
-        "scheduledNotifiedAt": "2026-08-17T08:59:07.823Z"
-      },
-      {
         "id": "0884a5aa-822c-4e6e-b68c-2400ce6d0042",
         "stage": "awareness",
         "guidance": "Fail test PASSED",
