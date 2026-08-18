@@ -212,7 +212,7 @@
         {{ loadingProjects ? 'Loading…' : 'Load projects' }}
       </button>
       <p class="hint">
-        Token is only required to Save or Post now. Since this repo is public, Load works without one.
+        Token is only required to Save. Since this repo is public, Load works without one.
       </p>
     </section>
 
@@ -307,9 +307,6 @@
                   <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
                   <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
                   <td class="row-actions">
-                    <button type="button" class="btn-ghost" (click)="postChannelNow(channel)" [disabled]="busy">
-                      {{ postingChannelId === channel.id ? 'Working…' : 'Post now' }}
-                    </button>
                     <button type="button" class="btn-danger" (click)="removeChannel($index)" [disabled]="busy">Remove</button>
                   </td>
                 </tr>
@@ -323,23 +320,11 @@
           <button type="button" class="btn-secondary" (click)="save()" [disabled]="busy">
             {{ saving ? 'Saving…' : 'Save to GitHub' }}
           </button>
-          <button type="button" class="btn-primary" (click)="postNow()" [disabled]="busy">
-            {{ postingNow ? 'Working…' : 'Post now (all channels in ' + (selectedProject?.name ?? selectedProjectId) + ')' }}
-          </button>
         </div>
         <p class="hint">
-          "Post now" runs sync-drive.yml (Drive → inbox/), waits for it to finish, then runs post.yml (inbox/ →
-          Buffer) — both immediately instead of waiting for their hourly cron, scoped to
-          <strong>{{ selectedProject?.name ?? selectedProjectId }}</strong> only. The per-row
-          <strong>Post now</strong> does the same for just that one channel, ignoring its Enabled checkbox — no need
-          to enable a channel just to test it. Either way it reads from what's already saved on
-          GitHub, not unsaved edits in this page — <strong>Save to GitHub first</strong> if you just changed
-          something. Your token needs the <strong>Actions: read and write</strong> permission for these buttons, in
-          addition to Contents. Can take up to a couple minutes; the status message above will update as each step
-          finishes.
-          <a href="https://github.com/{{ connection.owner }}/{{ connection.repo }}/actions" target="_blank" rel="noopener">
-            View runs on GitHub →
-          </a>
+          Channels post on their own schedule via the workflows' cron (tunable in Settings) plus
+          <code>scheduled-posts.yml</code> for time-targeted planned posts. To force a run right now, use
+          <strong>Trigger now</strong> on the Settings page.
         </p>
       </section>
     }

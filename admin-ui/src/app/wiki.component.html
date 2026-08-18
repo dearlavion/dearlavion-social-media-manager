@@ -43,7 +43,7 @@
       <tr><th>Field</th><th>What it is</th></tr>
     </thead>
     <tbody>
-      <tr><td>Enabled</td><td>Whether post.yml should post this channel's oldest queued item automatically every time it runs. Leave unchecked while testing — the per-row Post now button ignores this anyway.</td></tr>
+      <tr><td>Enabled</td><td>Whether post.yml should post this channel's oldest queued item automatically every time it runs. Leave unchecked while testing a channel you don't want live yet.</td></tr>
       <tr><td>Id</td><td>A unique name for this channel within the project, e.g. <code>ig-main</code>.</td></tr>
       <tr><td>Platform</td><td>Label only, for your reference — the real destination is set by Posting tool + its ID field below.</td></tr>
       <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
@@ -79,7 +79,7 @@
 
   <h2 id="token">Getting a GitHub token</h2>
   <p>
-    Anything beyond loading (Save, Add project, Post now) needs a fine-grained Personal Access Token:
+    Anything beyond loading (Save, Add project) needs a fine-grained Personal Access Token — add the Actions permission too if you'll use Settings' Trigger now or cron editing:
   </p>
   <ol>
     <li>github.com → your avatar → <strong>Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong></li>
@@ -91,22 +91,17 @@
 
   <h2>6. Test it</h2>
   <p>
-    Two ways to trigger a post without waiting for the hourly cron, both requiring the token above:
-  </p>
-  <ul>
-    <li><strong>Post now</strong> (per channel row, next to Remove) — forces just that one channel, ignoring its Enabled checkbox entirely. The fastest way to test a single new channel.</li>
-    <li><strong>Post now (all channels in …)</strong> — runs the same sync-then-post flow for every enabled channel with something queued, in the currently selected project only.</li>
-  </ul>
-  <p>
-    Either can take up to a couple of minutes — the status message at the top updates as each step (sync, then
-    post) finishes. If a channel needs an image and none has been synced from Drive yet, it'll say so instead of
-    posting nothing silently.
+    To trigger a run without waiting for its cron, go to <strong>Settings</strong> (left menu) and use
+    <strong>Trigger now</strong> on the workflow you want (sync-drive.yml or post.yml) — same as clicking "Run
+    workflow" on the Actions tab, but from this app. Requires a token with the Actions permission (see above). If a
+    channel needs an image and none has been synced from Drive yet, the run's log will say so instead of posting
+    nothing silently.
   </p>
 
   <h2>Common gotchas</h2>
   <ul>
     <li>The repo must stay <strong>public</strong> — Buffer fetches images from a public GitHub URL, not a binary upload.</li>
-    <li>A 401 on Save/Post now almost always means the token field is empty or missing the Actions permission.</li>
+    <li>A 401 on Save/Trigger now almost always means the token field is empty or missing the Actions permission.</li>
     <li>A 403 on Save usually means the token's repository access was left on a read-only default when it was created.</li>
   </ul>
 
@@ -125,7 +120,7 @@
       <strong>Synced</strong> lists queued posts with a media-type badge (<code>image</code>, <code>video</code>,
       or <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and its position in that channel's
       FIFO queue — the oldest one is tagged <strong>Posts next run</strong>, since each enabled channel's oldest
-      queued item goes out every time post.yml runs; a manual <strong>Post now</strong> can still jump the line.
+      queued item goes out every time post.yml runs.
     </li>
   </ol>
   <p>

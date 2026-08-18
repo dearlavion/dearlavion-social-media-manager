@@ -57,20 +57,11 @@ export class AppComponent implements OnInit {
   loaded = false;
   loading = false;
   saving = false;
-  postingNow = false;
-  postingChannelId: string | null = null;
   statusMessage = '';
   errorMessage = '';
 
   get busy(): boolean {
-    return (
-      this.loading ||
-      this.saving ||
-      this.postingNow ||
-      this.postingChannelId !== null ||
-      this.loadingProjects ||
-      this.savingProject
-    );
+    return this.loading || this.saving || this.loadingProjects || this.savingProject;
   }
 
   get enabledCount(): number {
@@ -207,52 +198,6 @@ export class AppComponent implements OnInit {
       this.errorMessage = err instanceof Error ? err.message : String(err);
     } finally {
       this.saving = false;
-    }
-  }
-
-  private async runSyncThenPost(channelId?: string): Promise<void> {
-    if (!this.selectedProjectId) return;
-    this.errorMessage = '';
-    this.statusMessage = '';
-    const inputs: Record<string, string> = { project_id: this.selectedProjectId };
-    if (channelId) inputs['channel_id'] = channelId;
-    const scope = channelId ? `"${channelId}"` : `all enabled channels in "${this.selectedProjectId}"`;
-    try {
-      this.statusMessage = `Syncing Drive images for ${scope}… (this can take a minute)`;
-      const syncRun = await this.github.triggerAndWait(this.connection, 'sync-drive.yml', inputs);
-      if (syncRun.conclusion !== 'success') {
-        throw new Error(
-          `sync-drive.yml finished with "${syncRun.conclusion}", so posting was skipped. Check the run: ${syncRun.html_url}`,
-        );
-      }
-
-      this.statusMessage = `Sync complete. Posting for ${scope}…`;
-      const postRun = await this.github.triggerAndWait(this.connection, 'post.yml', inputs);
-
-      this.statusMessage = `Done: sync-drive succeeded, post finished with "${postRun.conclusion}". Run: ${postRun.html_url}`;
-      if (postRun.conclusion !== 'success') {
-        this.errorMessage = `The post run itself reported "${postRun.conclusion}" -- check its log for the actual error.`;
-      }
-    } catch (err) {
-      this.errorMessage = err instanceof Error ? err.message : String(err);
-    }
-  }
-
-  async postNow(): Promise<void> {
-    this.postingNow = true;
-    try {
-      await this.runSyncThenPost();
-    } finally {
-      this.postingNow = false;
-    }
-  }
-
-  async postChannelNow(channel: ChannelConfig): Promise<void> {
-    this.postingChannelId = channel.id;
-    try {
-      await this.runSyncThenPost(channel.id);
-    } finally {
-      this.postingChannelId = null;
     }
   }
 
