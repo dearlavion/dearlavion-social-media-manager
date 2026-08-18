@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GithubConnection, GithubService } from './github.service';
 import {
+  CronPattern,
   EVERY_N_MINUTES_OPTIONS,
   ParsedCron,
+  WEEKDAYS,
   WORKFLOW_SCHEDULES,
   WorkflowScheduleConfig,
   buildCron,
@@ -19,9 +21,15 @@ interface WorkflowState {
   sha: string;
   /** Null if no "cron: '...'" line was found in the file at all. */
   currentCron: string | null;
-  /** Null if a cron line was found but isn't one of the two shapes this UI knows how to edit safely. */
+  /** Null if a cron line was found but isn't one of the three shapes this page knows how to edit safely. */
   parsed: ParsedCron | null;
-  editValue: number;
+  // Editable fields for all three patterns at once -- switching the "Schedule type" selector just changes which
+  // subset is shown, without losing whatever's already sitting in the others.
+  editPattern: CronPattern;
+  editMinute: number;
+  editHour: number;
+  editEveryN: number;
+  editDays: number[];
 }
 
 @Component({
@@ -35,6 +43,12 @@ export class SettingsComponent {
   @Input({ required: true }) connection!: GithubConnection;
 
   readonly everyNMinutesOptions = EVERY_N_MINUTES_OPTIONS;
+  readonly weekdays = WEEKDAYS;
+  readonly patternOptions: { value: CronPattern; label: string }[] = [
+    { value: 'hourlyAtMinute', label: 'Every hour, at a specific minute' },
+    { value: 'everyNMinutes', label: 'Every N minutes' },
+    { value: 'daysAtTime', label: 'On specific days, at a specific time' },
+  ];
 
   loading = false;
   loaded = false;
@@ -63,7 +77,11 @@ export class SettingsComponent {
             sha,
             currentCron,
             parsed,
-            editValue: parsed?.value ?? (config.pattern === 'hourlyAtMinute' ? 0 : 5),
+            editPattern: parsed?.pattern ?? 'hourlyAtMinute',
+            editMinute: parsed && parsed.pattern !== 'everyNMinutes' ? parsed.minute : 0,
+            editHour: parsed?.pattern === 'daysAtTime' ? parsed.hour : 9,
+            editEveryN: parsed?.pattern === 'everyNMinutes' ? parsed.everyN : 5,
+            editDays: parsed?.pattern === 'daysAtTime' ? parsed.days : [0, 1, 2, 3, 4, 5, 6],
           };
         }),
       );
@@ -79,28 +97,67 @@ export class SettingsComponent {
     return String(n).padStart(2, '0');
   }
 
-  describeCron(wf: WorkflowState): string {
-    if (!wf.parsed) return wf.currentCron ?? '(no cron found)';
-    return wf.parsed.pattern === 'hourlyAtMinute'
-      ? `Every hour, at :${String(wf.parsed.value).padStart(2, '0')}`
-      : `Every ${wf.parsed.value} minute${wf.parsed.value === 1 ? '' : 's'}`;
+  formatTime(hour: number, minute: number): string {
+    return `${this.padMinute(hour)}:${this.padMinute(minute)}`;
   }
 
-  /** Other hourly workflows currently set (or being edited) to the same minute -- a heads up, not a hard block. */
+  daysLabel(days: number[]): string {
+    const sorted = [...days].sort((a, b) => a - b);
+    if (sorted.length === 7) return 'Every day';
+    if (sorted.join(',') === '1,2,3,4,5') return 'Weekdays';
+    if (sorted.join(',') === '0,6') return 'Weekends';
+    return sorted.map((d) => WEEKDAYS[d].label).join(', ');
+  }
+
+  describeCron(wf: WorkflowState): string {
+    if (!wf.parsed) return wf.currentCron ?? '(no cron found)';
+    switch (wf.parsed.pattern) {
+      case 'hourlyAtMinute':
+        return `Every hour, at :${this.padMinute(wf.parsed.minute)}`;
+      case 'everyNMinutes':
+        return `Every ${wf.parsed.everyN} minute${wf.parsed.everyN === 1 ? '' : 's'}`;
+      case 'daysAtTime':
+        return `${this.daysLabel(wf.parsed.days)} at ${this.formatTime(wf.parsed.hour, wf.parsed.minute)}`;
+    }
+  }
+
+  toggleDay(wf: WorkflowState, day: number): void {
+    wf.editDays = wf.editDays.includes(day) ? wf.editDays.filter((d) => d !== day) : [...wf.editDays, day].sort((a, b) => a - b);
+  }
+
+  setDaysPreset(wf: WorkflowState, preset: 'all' | 'weekdays' | 'weekends'): void {
+    wf.editDays = preset === 'all' ? [0, 1, 2, 3, 4, 5, 6] : preset === 'weekdays' ? [1, 2, 3, 4, 5] : [0, 6];
+  }
+
+  /** Minute this workflow would fire at, for the two patterns where that's a single fixed value -- null for everyNMinutes, which has no one minute to compare. */
+  private minuteOf(wf: WorkflowState): number | null {
+    return wf.editPattern === 'everyNMinutes' ? null : wf.editMinute;
+  }
+
+  /** Other workflows currently set (or being edited) to the same minute -- a heads up, not a hard block. */
   minuteCollisions(wf: WorkflowState): string[] {
-    if (wf.config.pattern !== 'hourlyAtMinute') return [];
-    return this.workflows
-      .filter((other) => other !== wf && other.config.pattern === 'hourlyAtMinute' && other.editValue === wf.editValue)
-      .map((other) => other.config.label);
+    const mine = this.minuteOf(wf);
+    if (mine === null) return [];
+    return this.workflows.filter((other) => other !== wf && this.minuteOf(other) === mine).map((other) => other.config.label);
   }
 
   async save(wf: WorkflowState): Promise<void> {
     if (!wf.parsed) return;
+    if (wf.editPattern === 'daysAtTime' && wf.editDays.length === 0) {
+      this.errorMessage = `${wf.config.label}: pick at least one day before saving.`;
+      return;
+    }
     this.errorMessage = '';
     this.statusMessage = '';
     this.savingFile = wf.config.file;
     try {
-      const newCron = buildCron(wf.parsed.pattern, wf.editValue);
+      const newParsed: ParsedCron =
+        wf.editPattern === 'hourlyAtMinute'
+          ? { pattern: 'hourlyAtMinute', minute: wf.editMinute }
+          : wf.editPattern === 'everyNMinutes'
+            ? { pattern: 'everyNMinutes', everyN: wf.editEveryN }
+            : { pattern: 'daysAtTime', hour: wf.editHour, minute: wf.editMinute, days: wf.editDays };
+      const newCron = buildCron(newParsed);
       const newContent = replaceCronInYaml(wf.raw, newCron);
       wf.sha = await this.github.saveRawFile(
         this.connection,
@@ -111,7 +168,7 @@ export class SettingsComponent {
       );
       wf.raw = newContent;
       wf.currentCron = newCron;
-      wf.parsed = { pattern: wf.parsed.pattern, value: wf.editValue };
+      wf.parsed = newParsed;
       this.statusMessage = `Saved ${wf.config.label}'s schedule.`;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);

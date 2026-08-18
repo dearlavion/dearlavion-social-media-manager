@@ -135,11 +135,14 @@ Check **[github.com/settings/notifications](https://github.com/settings/notifica
 
 **Settings** (admin UI, left menu) edits how often `sync-drive.yml`, `post.yml`, `reminders.yml`, and `scheduled-posts.yml` actually run — no need to hand-edit YAML in the repo. There's no separate API for a workflow's cron; the schedule lives in a `cron:` line inside each workflow file on `main`, so **Save schedule** reads that file's raw text, swaps in the new cron expression, and commits it straight back via the same GitHub Contents API every other Save button in this app uses.
 
-- The three hourly workflows (`sync-drive`, `post`, `reminders`) each show a **minute-past-the-hour** number input (0–59) — they're intentionally offset from each other (`:00`/`:15`/`:30`) so their auto-commits don't land in the same push and race each other. Setting two to the same minute shows a non-blocking heads-up, not a hard block.
-- `scheduled-posts.yml` shows an **interval** dropdown (every 1/5/10/15/20/30/60 minutes) instead, since it polls rather than firing once an hour — see [Scheduled posts](#scheduled-posts).
-- **Trigger now** runs that workflow immediately (same as "Run workflow" on the Actions tab) without touching its schedule — useful for testing a new interval without waiting for it.
-- If a workflow's `cron:` line were ever hand-edited into some other shape, its card falls back to a read-only display of the raw expression rather than risk mangling something this page doesn't understand.
-- **Save schedule** needs the same **Contents: read and write** token as any other Save button here; **Trigger now** additionally needs **Actions: read and write**.
+**GitHub Actions cron has no seconds field** — one minute is the finest granularity possible here, full stop, regardless of what this page offers.
+
+Each workflow's **Schedule type** dropdown picks between three shapes, freely switchable per workflow — nothing is locked to one pattern:
+- **Every hour, at a specific minute** (0–59) — the default for `sync-drive`/`post`/`reminders`, intentionally offset from each other (`:00`/`:15`/`:30`) so their auto-commits don't land in the same push and race each other.
+- **Every N minutes** (1/5/10/15/20/30/60) — what `scheduled-posts.yml` uses by default, since it polls rather than firing once an hour — see [Scheduled posts](#scheduled-posts).
+- **On specific days, at a specific time** — an hour (0–23) + minute (0–59), plus a day-of-week picker with **Every day**/**Weekdays**/**Weekends** presets or individual day checkboxes. Useful for something that should only run, say, weekday mornings rather than every hour around the clock.
+
+Setting two workflows to the same minute (whichever pattern each is using) shows a non-blocking heads-up, not a hard block — auto-commits landing in the same push can occasionally collide. **Trigger now** runs a workflow immediately (same as "Run workflow" on the Actions tab) without touching its schedule. If a workflow's `cron:` line were ever hand-edited into some other shape than these three (a day-of-month restriction, a month restriction, an hour range), its card falls back to a read-only display of the raw expression rather than risk mangling something this page doesn't understand. **Save schedule** needs the same **Contents: read and write** token as any other Save button here; **Trigger now** additionally needs **Actions: read and write**.
 
 ## Local development / dry runs
 

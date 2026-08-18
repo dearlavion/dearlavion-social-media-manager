@@ -172,6 +172,66 @@ select:focus {
   width: 90px;
 }
 
+.schedule-field.time-field input {
+  width: 70px;
+}
+
+.schedule-field.pattern-field select {
+  width: auto;
+  min-width: 220px;
+}
+
 .collision-hint {
   color: var(--color-coral-deep);
+}
+
+/* DAYS PICKER */
+
+.days-picker {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-line);
+}
+
+.days-presets {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.days-presets button {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.days-checkboxes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.day-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.day-checkbox.checked {
+  background: var(--tint-marigold);
+  border-color: var(--color-coral);
+  color: var(--color-coral-deep);
+}
+
+.day-checkbox input {
+  margin: 0;
+  padding: 0;
+  width: auto;
 }

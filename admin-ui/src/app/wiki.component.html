@@ -415,31 +415,44 @@
 
   <h2>How it works</h2>
   <ol>
-    <li><strong>Load schedules</strong> reads all four workflow files and shows each one's current cron as plain English (e.g. "Every hour, at :15" or "Every 5 minutes").</li>
+    <li><strong>Load schedules</strong> reads all four workflow files and shows each one's current cron as plain English (e.g. "Every hour, at :15" or "Weekdays at 09:30").</li>
     <li>
-      The three hourly workflows show a <strong>minute past the hour</strong> field (0–59).
-      <code>scheduled-posts.yml</code> shows an <strong>interval</strong> dropdown instead, since it polls every
-      few minutes rather than firing once an hour — see <a href="#scheduled-posts">Scheduled posts</a>.
+      Each card has a <strong>Schedule type</strong> dropdown with three options, freely switchable — nothing is
+      locked to one shape:
+      <ul>
+        <li><strong>Every hour, at a specific minute</strong> (0–59) — the default for the three hourly workflows.</li>
+        <li><strong>Every N minutes</strong> (1/5/10/15/20/30/60) — the default for <code>scheduled-posts.yml</code>, since it polls rather than firing once an hour — see <a href="#scheduled-posts">Scheduled posts</a>.</li>
+        <li><strong>On specific days, at a specific time</strong> — an hour + minute, plus a day-of-week picker (<strong>Every day</strong> / <strong>Weekdays</strong> / <strong>Weekends</strong> presets, or check individual days). Useful if a workflow should only run on, say, weekday mornings instead of around the clock every hour.</li>
+      </ul>
     </li>
     <li><strong>Save schedule</strong> commits just that one change to the workflow file — everything else in it (secrets, steps, triggers) is left untouched.</li>
-    <li><strong>Trigger now</strong> runs that workflow immediately (same as clicking "Run workflow" on GitHub's Actions tab) without changing its schedule at all — handy for testing a new interval right away instead of waiting for it.</li>
+    <li><strong>Trigger now</strong> runs that workflow immediately (same as clicking "Run workflow" on GitHub's Actions tab) without changing its schedule at all — handy for testing right away instead of waiting for it.</li>
   </ol>
 
-  <h2>Why the three hourly ones default to different minutes</h2>
+  <h2>No seconds, ever</h2>
+  <p>
+    GitHub Actions cron simply has no seconds field — minute, hour, day, month, weekday, that's the whole syntax.
+    One minute is the finest granularity possible, regardless of what this page offers or how it's configured.
+  </p>
+
+  <h2>Why the hourly workflows default to different minutes</h2>
   <p>
     <code>sync-drive</code>, <code>post</code>, and <code>reminders</code> ship offset from each other (<code>:00</code>,
     <code>:15</code>, <code>:30</code>) on purpose — each run ends with an auto-commit (synced media, moved post
     folders, or a notified reminder), and two workflows committing around the same moment can occasionally collide.
     Setting two of them to the same minute here shows a small heads-up under both cards — it's not blocked, just
     flagged, since an occasional collision on a personal-scale repo is a minor inconvenience, not a real problem.
+    This heads-up compares minutes across the hourly and days-at-time patterns alike (whichever ones have a single
+    fixed minute) — <code>scheduled-posts.yml</code>'s own every-N-minutes interval isn't a single minute, so it's
+    left out of the comparison.
   </p>
 
   <h2>If a schedule looks read-only</h2>
   <p>
-    This page only recognizes the two cron shapes actually used in this repo (an hourly minute, or an
-    every-N-minutes interval). If a workflow file were ever hand-edited into some other cron expression, its card
-    shows the raw value instead of an editable field, rather than risk saving something mangled. Edit that one
-    directly in the repo if it ever needs to change.
+    This page only recognizes the three cron shapes above. If a workflow file were ever hand-edited into some other
+    cron expression — a day-of-month restriction, a month restriction, an hour range — its card shows the raw value
+    instead of an editable field, rather than risk saving something mangled. Edit that one directly in the repo if
+    it ever needs to change.
   </p>
 
   <h2>Permissions</h2>

@@ -5,7 +5,8 @@
       <p>
         Controls how often each GitHub Actions workflow runs. Edits go straight to the workflow's YAML file on
         <strong>{{ connection.branch }}</strong> via the same repo connection as everything else -- no need to touch
-        the files by hand.
+        the files by hand. GitHub Actions cron has no seconds field, so one minute is the finest granularity
+        possible here, full stop.
       </p>
     </div>
   </header>
@@ -46,19 +47,37 @@
           </p>
         } @else {
           <div class="schedule-editor">
-            @if (wf.parsed.pattern === 'hourlyAtMinute') {
+            <label class="schedule-field pattern-field">
+              Schedule type
+              <select [(ngModel)]="wf.editPattern">
+                @for (opt of patternOptions; track opt.value) {
+                  <option [ngValue]="opt.value">{{ opt.label }}</option>
+                }
+              </select>
+            </label>
+
+            @if (wf.editPattern === 'hourlyAtMinute') {
               <label class="schedule-field">
                 Minute past the hour
-                <input type="number" min="0" max="59" [(ngModel)]="wf.editValue" />
+                <input type="number" min="0" max="59" [(ngModel)]="wf.editMinute" />
               </label>
-            } @else {
+            } @else if (wf.editPattern === 'everyNMinutes') {
               <label class="schedule-field">
                 Interval
-                <select [(ngModel)]="wf.editValue">
+                <select [(ngModel)]="wf.editEveryN">
                   @for (n of everyNMinutesOptions; track n) {
                     <option [ngValue]="n">Every {{ n }} minute{{ n === 1 ? '' : 's' }}</option>
                   }
                 </select>
+              </label>
+            } @else {
+              <label class="schedule-field time-field">
+                Hour (0-23)
+                <input type="number" min="0" max="23" [(ngModel)]="wf.editHour" />
+              </label>
+              <label class="schedule-field time-field">
+                Minute
+                <input type="number" min="0" max="59" [(ngModel)]="wf.editMinute" />
               </label>
             }
 
@@ -70,13 +89,33 @@
             </button>
           </div>
 
+          @if (wf.editPattern === 'daysAtTime') {
+            <div class="days-picker">
+              <div class="days-presets">
+                <button type="button" class="btn-ghost" (click)="setDaysPreset(wf, 'all')">Every day</button>
+                <button type="button" class="btn-ghost" (click)="setDaysPreset(wf, 'weekdays')">Weekdays</button>
+                <button type="button" class="btn-ghost" (click)="setDaysPreset(wf, 'weekends')">Weekends</button>
+              </div>
+              <div class="days-checkboxes">
+                @for (day of weekdays; track day.value) {
+                  <label class="day-checkbox" [class.checked]="wf.editDays.includes(day.value)">
+                    <input type="checkbox" [checked]="wf.editDays.includes(day.value)" (change)="toggleDay(wf, day.value)" />
+                    {{ day.label }}
+                  </label>
+                }
+              </div>
+              @if (wf.editDays.length === 0) {
+                <p class="hint collision-hint">Pick at least one day -- this can't be saved with none selected.</p>
+              }
+            </div>
+          }
+
           @if (minuteCollisions(wf); as collisions) {
             @if (collisions.length > 0) {
               <p class="hint collision-hint">
-                Heads up: {{ collisions.join(', ') }} {{ collisions.length === 1 ? 'is' : 'are' }} also set to :{{
-                  padMinute(wf.editValue)
-                }} past the hour. Both commit their own results around the same time, which can occasionally collide
-                -- not a hard problem, just worth knowing.
+                Heads up: {{ collisions.join(', ') }} {{ collisions.length === 1 ? 'is' : 'are' }} also set to fire at
+                :{{ padMinute(wf.editMinute) }} within its hour. Both commit their own results around the same time,
+                which can occasionally collide -- not a hard problem, just worth knowing.
               </p>
             }
           }
