@@ -4,7 +4,7 @@ Automates posting to Instagram, TikTok, and Facebook across multiple **projects*
 
 No server to host: everything runs as scheduled GitHub Actions workflows.
 
-Each project keeps its own brand voice/content guide at `brand/<projectId>/voice.md` — e.g. [`brand/travel-besty/voice.md`](brand/travel-besty/voice.md). Read the relevant one before writing `captionTemplate` values or any future caption-generation step for that project.
+Each project keeps its own brand voice/content guide at `brand/<projectId>/voice.md` — e.g. [`brand/travel-besty/voice.md`](brand/travel-besty/voice.md). Read the relevant one before writing a post's `caption.txt` or any future caption-generation step for that project.
 
 ## How it works
 
@@ -57,9 +57,9 @@ Open the admin UI: **https://dearlavion.github.io/dearlavion-social-media-manage
 Loading works with no token at all, since the repo is public. To **Save** or create a project on **Set Up**, paste a **fine-grained GitHub PAT** scoped to this repo with `Contents: read and write` permissions (kept only in this browser tab's session storage — never sent anywhere but `api.github.com`). Add `Actions: read and write` too if you'll use **Settings**' Trigger now / cron editing.
 
 1. On the **Dashboard**, **Load projects**, then select an existing one — or go to **Set Up** (left menu) to create a new one (an id like `travel-besty` and a display name), which creates its `config/<id>/channels.json` and switches you back to the Dashboard with it selected. Set Up is also where the posting-tool connection instructions (Buffer today) live.
-2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `driveFolderId`, `bufferChannelId`, and a default `captionTemplate`.
+2. Back on the Dashboard, **Load channels.json** for that project, then add/edit channels: a unique `id`, `platform` (label only, for your own reference), **Posting tool** (which backend actually publishes — only Buffer is implemented, see `automation/src/publishers/`), `driveFolderId`, and `bufferChannelId`.
 
-**Media type is set by how you organize the Drive folder**, not a separate field: a loose image or video file at the top level becomes a single-item post; a **subfolder** becomes a carousel post from every image/video inside it (up to 10 items, Instagram's cap). To override the caption for one specific post, add a `caption.txt` file directly to that post's folder on GitHub (`inbox/<projectId>/<channelId>/<postId>/caption.txt`, after `sync-drive` has created it — Drive sync only picks up image/video files, so this one's added on the GitHub side, not from Drive) — it's used instead of the channel's `captionTemplate` and moves along with the rest of that post once published.
+**Media type is set by how you organize the Drive folder**, not a separate field: a loose image or video file at the top level becomes a single-item post; a **subfolder** becomes a carousel post from every image/video inside it (up to 10 items, Instagram's cap). **Captions come only from a per-post `caption.txt`** — add one directly to that post's folder on GitHub (`inbox/<projectId>/<channelId>/<postId>/caption.txt`, after `sync-drive` has created it — Drive sync only picks up image/video files, so this one's added on the GitHub side, not from Drive) — it moves along with the rest of that post once published. A post folder with no `caption.txt` publishes with an empty caption.
 
 The Dashboard just edits `channels.json` — enable/disable a channel, add/remove one, tweak its posting-tool fields. It reads from what's already saved on GitHub, not unsaved edits in the page — **Save to GitHub** first if you just changed something.
 

@@ -10,7 +10,7 @@ Two independent npm packages, no shared tooling or root `package.json`:
 - **`automation/`** — Node/TypeScript scripts the GitHub Actions workflows run (Drive sync, posting, scheduled posts, reminders).
 - **`admin-ui/`** — an Angular 20 app that edits this repo's own JSON/YAML config files via the GitHub API.
 
-Each project keeps its own brand voice/content guide at `brand/<projectId>/voice.md` — read the relevant one before writing `captionTemplate` values or any caption-generation logic for that project.
+Each project keeps its own brand voice/content guide at `brand/<projectId>/voice.md` — read the relevant one before writing a post's `caption.txt` or any caption-generation logic for that project.
 
 ## Commands
 
@@ -52,7 +52,7 @@ Buffer's `createPost` only accepts a publicly-fetchable image URL (`raw.githubus
 ### Multi-project isolation, all on disk
 
 `config/projects.json` is the registry (`[{id, name}]`). Everything else is namespaced under `<projectId>` so projects never collide:
-- `config/<projectId>/channels.json` — that project's channels (platform, `enabled`, `driveFolderId`, `bufferChannelId`, `captionTemplate`, `publisher`, `lastPostedAt`, `syncedDriveFileIds`).
+- `config/<projectId>/channels.json` — that project's channels (platform, `enabled`, `driveFolderId`, `bufferChannelId`, `publisher`, `lastPostedAt`, `syncedDriveFileIds`).
 - `config/<projectId>/campaigns.json` — that project's campaigns (absent until one is created).
 - `inbox/<projectId>/<channelId>/<postId>/` — media synced from Drive, one folder per post, waiting to be posted.
 - `posted/<projectId>/<channelId>/<postId>/` — the same, moved here after a successful post.
@@ -66,10 +66,12 @@ All four live in `.github/workflows/`, all `working-directory: automation`, all 
 
 1. **`sync-drive.yml`** (`0 * * * *`) — for every enabled channel in every project, lists new top-level Drive entries. A loose file becomes one post folder; a subfolder becomes a carousel (capped at Instagram's 10 items). Files over ~90MB are skipped to stay under GitHub's 100MB push limit. Logic in `automation/src/sync-drive.ts` + `drive-sync-helpers.ts` (`sanitize`/`postFolderName`/`downloadEntry`/size guard — extracted so they can be imported without triggering `sync-drive.ts`'s self-invoking `main()`).
 2. **`post.yml`** (`15 * * * *`) — for every enabled channel, posts its oldest post folder in `inbox/` (FIFO, one item per channel per run — no per-channel interval, just this workflow's own cron), then moves it to `posted/` and stamps `lastPostedAt` (informational only now). Skips any folder reserved by a not-yet-due scheduled post. Logic in `automation/src/post.ts` + `post-helpers.ts` (shared with `scheduled-posts.ts`: media reading, caption resolution, `movePosted`, carousel cap, `findSlotByLinkedPath`).
-3. **`reminders.yml`** (`30 * * * *`) — checks `config/reminders.json` for anything due; if so, logs it, marks it notified, commits, then **deliberately fails the run** so GitHub's own "workflow run failed" email fires (no external email service). The actual message is the first line of the "Check reminders" step's log — GitHub doesn't let a workflow customize the email body.
-4. **`scheduled-posts.yml`** (`*/5 * * * *`, the one workflow that isn't hourly) — publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval. Same deliberate-failure notification pattern as reminders when media is missing. See [README.md § Scheduled posts](README.md#scheduled-posts) for the full two-tier filename-matching logic (inbox-first, then live Drive lookup) and the extension-guard that rejects unsupported file types before searching.
+3. **`reminders.yml`** (`30 * * * *`) — checks `config/reminders.json` for anything due; if so, opens a GitHub Issue per due reminder via `automation/src/github-issues.ts` (this is the actual notification -- watch the repo at "All Activity" to get it). Only if opening that issue itself fails does the run deliberately fail its last step, so GitHub's own "workflow run failed" email fires as a backup (no external email service).
+4. **`scheduled-posts.yml`** (`*/5 * * * *`, the one workflow that isn't hourly) — publishes a campaign slot's linked media at its own target date+time, independent of the channel's regular interval. Opens (and auto-closes) a GitHub Issue on publish success, opens a persistent one on failure, same issue-first/email-only-as-backup pattern as reminders. See [README.md § Scheduled posts](README.md#scheduled-posts) for the full two-tier filename-matching logic (inbox-first, then live Drive lookup) and the extension-guard that rejects unsupported file types before searching.
 
-`post.yml` and `sync-drive.yml` also accept `workflow_dispatch` inputs `project_id`/`channel_id` to scope or force a single run — the admin UI's "Post now" buttons trigger these via `GithubService.triggerAndWait()`.
+`post.ts` follows the same issue-first/email-backup notification pattern per channel (try/catch around each `publish()` call so one channel's failure doesn't abort the others in the same run).
+
+`post.yml` and `sync-drive.yml` also accept `workflow_dispatch` inputs `project_id`/`channel_id` to scope or force a single run -- trigger either from the admin UI's **Settings** page ("Trigger now") or the Actions tab.
 
 ### Posting backend is pluggable per channel
 

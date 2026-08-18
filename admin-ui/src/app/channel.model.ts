@@ -23,7 +23,6 @@ export interface ChannelConfig {
   enabled: boolean;
   driveFolderId: string;
   bufferChannelId: string;
-  captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
   publisher?: Publisher;
@@ -36,7 +35,6 @@ export function newChannel(): ChannelConfig {
     enabled: false,
     driveFolderId: '',
     bufferChannelId: '',
-    captionTemplate: '',
     syncedDriveFileIds: [],
     lastPostedAt: null,
     publisher: 'buffer',

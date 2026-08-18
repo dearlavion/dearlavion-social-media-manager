@@ -120,7 +120,6 @@ export interface ChannelConfig {
   enabled: boolean;
   driveFolderId: string;
   bufferChannelId: string;
-  captionTemplate: string;
   syncedDriveFileIds: string[];
   lastPostedAt: string | null;
   publisher?: Publisher;

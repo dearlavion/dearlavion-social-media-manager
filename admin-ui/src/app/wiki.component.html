@@ -49,7 +49,6 @@
       <tr><td>Posting tool</td><td>Which backend actually publishes the post. Buffer is the only one implemented today; more can be added later without changing existing channels.</td></tr>
       <tr><td>Drive folder ID</td><td>The Google Drive folder this channel pulls media from — the long id from the folder's share URL.</td></tr>
       <tr><td>Buffer channel ID</td><td>Which connected account in Buffer to publish to. Look it up via Buffer's GraphQL API (see the README's Buffer section for the exact query).</td></tr>
-      <tr><td>Caption template</td><td>Default caption text for every post on this channel, unless a post's folder has its own <code>caption.txt</code> (see below).</td></tr>
     </tbody>
   </table>
 
@@ -64,11 +63,11 @@
   </ul>
   <p>
     Each becomes its own post folder in <code>inbox/&lt;projectId&gt;/&lt;channelId&gt;/&lt;postId&gt;/</code> once
-    synced. To give one specific post a custom caption instead of the channel's default template, add a
-    <code>caption.txt</code> file directly to that post's folder on GitHub — Drive sync only picks up image/video
-    files, so this file has to be added on the GitHub side (via the Content Queue's post folder path, or the
-    Contents tab), not through Drive. Any single file over ~90MB is skipped during sync, logged clearly, rather than
-    breaking the run.
+    synced. <strong>Captions come only from a per-post <code>caption.txt</code></strong> — add one directly to that
+    post's folder on GitHub — Drive sync only picks up image/video files, so this file has to be added on the
+    GitHub side (via the Content Queue's post folder path, or the Contents tab), not through Drive. A post folder
+    with no <code>caption.txt</code> publishes with an empty caption. Any single file over ~90MB is skipped during
+    sync, logged clearly, rather than breaking the run.
   </p>
 
   <h2>5. Save</h2>

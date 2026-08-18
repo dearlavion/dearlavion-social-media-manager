@@ -280,7 +280,6 @@
                 <th>Posting tool</th>
                 <th>Drive folder ID</th>
                 <th>Buffer channel ID</th>
-                <th>Caption template</th>
                 <th></th>
               </tr>
             </thead>
@@ -305,7 +304,6 @@
                   </td>
                   <td><input [(ngModel)]="channel.driveFolderId" placeholder="Google Drive folder id" /></td>
                   <td><input [(ngModel)]="channel.bufferChannelId" placeholder="Buffer channel id" /></td>
-                  <td><input [(ngModel)]="channel.captionTemplate" placeholder="Default caption" /></td>
                   <td class="row-actions">
                     <button type="button" class="btn-danger" (click)="removeChannel($index)" [disabled]="busy">Remove</button>
                   </td>

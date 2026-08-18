@@ -60,7 +60,7 @@
                       {{ post.mediaType === 'carousel' ? 'Carousel ×' + post.files.length : post.mediaType }}
                     </span>
                     <span class="caption-preview">
-                      {{ post.hasCustomCaption ? '✎ custom caption.txt' : (channel.captionTemplate || '(no caption template set)') }}
+                      {{ post.hasCustomCaption ? '✎ custom caption.txt' : '(no caption.txt — will post with no caption)' }}
                     </span>
 
                     @if (linkedSlotFor(post); as linked) {

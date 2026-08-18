@@ -1,7 +1,7 @@
 import { readdir, mkdir, rename, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { publicRawUrl, postedRoot } from './config.js';
-import type { ChannelConfig, Campaign, CampaignSlot } from './config.js';
+import type { Campaign, CampaignSlot } from './config.js';
 import type { PostMedia } from './publishers/types.js';
 
 /** The slot (if any) across every campaign whose linkedPostPath matches -- e.g. to check whether a folder is reserved for a scheduled post. */
@@ -39,12 +39,12 @@ export async function readPostMedia(postDir: string): Promise<PostMedia[]> {
   return media;
 }
 
-export async function resolveCaption(postDir: string, channel: ChannelConfig): Promise<string> {
+export async function resolveCaption(postDir: string): Promise<string> {
   try {
     const custom = await readFile(path.join(postDir, CAPTION_FILENAME), 'utf-8');
     return custom.trim();
   } catch {
-    return channel.captionTemplate;
+    return '';
   }
 }
 
