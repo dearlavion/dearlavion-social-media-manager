@@ -84,6 +84,13 @@ export class CampaignComponent {
   // Deleting an existing campaign, in detail mode
   confirmingDelete = false;
 
+  // Adding a channel to an existing campaign, in detail mode
+  addingChannel = false;
+  newChannelId = '';
+
+  // Removing a channel from an existing campaign, in detail mode
+  confirmingRemoveChannelId: string | null = null;
+
   constructor(private readonly github: GithubService) {}
 
   get selectedCampaign(): Campaign | undefined {
@@ -129,11 +136,12 @@ export class CampaignComponent {
     this.loading = true;
     try {
       const { campaigns, sha } = await this.github.loadCampaigns(this.connection, this.project.id);
-      // Campaigns created before channelTargets/status existed won't have them on GitHub.
+      // Campaigns created before channelTargets/status/channelIds existed won't have them on GitHub.
       this.campaigns = campaigns.map((c) => ({
         ...c,
         channelTargets: c.channelTargets ?? [],
         status: c.status ?? 'open',
+        channelIds: c.channelIds ?? Array.from(new Set([...c.slots.map((s) => s.channelId), ...(c.channelTargets ?? []).map((t) => t.channelId)])),
       }));
       this.sha = sha;
       this.loaded = true;
@@ -206,6 +214,8 @@ export class CampaignComponent {
     this.editingDates = false;
     this.editingName = false;
     this.confirmingDelete = false;
+    this.addingChannel = false;
+    this.confirmingRemoveChannelId = null;
     if (!this.inboxLoaded) {
       void this.loadInbox();
     }
@@ -274,6 +284,7 @@ export class CampaignComponent {
     campaign.startDate = this.draftStartDate || null;
     campaign.endDate = this.draftEndDate || null;
     campaign.slots = this.draftSlots;
+    campaign.channelIds = this.draftChannelIds;
     campaign.channelTargets = this.draftChannelIds
       .filter((channelId) => (this.draftChannelTargets[channelId] ?? 0) > 0)
       .map((channelId) => ({ channelId, targetCount: this.draftChannelTargets[channelId] }));
@@ -327,6 +338,55 @@ export class CampaignComponent {
     }
 
     this.editingGoalChannelId = null;
+    await this.save();
+  }
+
+  // --- detail: adding/removing a channel on an existing campaign ---
+
+  availableChannelsToAdd(campaign: Campaign): ChannelConfig[] {
+    const existing = new Set(campaign.channelIds ?? []);
+    return this.channels.filter((c) => !existing.has(c.id));
+  }
+
+  startAddChannel(): void {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    this.newChannelId = this.availableChannelsToAdd(campaign)[0]?.id ?? '';
+    this.addingChannel = true;
+  }
+
+  cancelAddChannel(): void {
+    this.addingChannel = false;
+  }
+
+  async confirmAddChannel(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign || !this.newChannelId) return;
+    campaign.channelIds = [...(campaign.channelIds ?? []), this.newChannelId];
+    this.addingChannel = false;
+    await this.save();
+  }
+
+  /** How many slots reference this channel -- surfaced in the remove-channel confirmation, since removing it drops them too. */
+  channelSlotCount(campaign: Campaign, channelId: string): number {
+    return campaign.slots.filter((s) => s.channelId === channelId).length;
+  }
+
+  startRemoveChannel(channelId: string): void {
+    this.confirmingRemoveChannelId = channelId;
+  }
+
+  cancelRemoveChannel(): void {
+    this.confirmingRemoveChannelId = null;
+  }
+
+  async confirmRemoveChannel(channelId: string): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    campaign.channelIds = (campaign.channelIds ?? []).filter((id) => id !== channelId);
+    campaign.channelTargets = campaign.channelTargets.filter((t) => t.channelId !== channelId);
+    campaign.slots = campaign.slots.filter((s) => s.channelId !== channelId);
+    this.confirmingRemoveChannelId = null;
     await this.save();
   }
 

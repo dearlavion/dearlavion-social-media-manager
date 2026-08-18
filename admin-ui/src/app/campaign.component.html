@@ -273,6 +273,26 @@
           </div>
         }
 
+        <div class="channels-header">
+          <h3>Channels</h3>
+          @if (!addingChannel) {
+            <button type="button" class="btn-ghost" (click)="startAddChannel()" [disabled]="availableChannelsToAdd(selectedCampaign).length === 0">
+              Add channel
+            </button>
+          }
+        </div>
+        @if (addingChannel) {
+          <div class="add-channel-row">
+            <select [(ngModel)]="newChannelId">
+              @for (c of availableChannelsToAdd(selectedCampaign); track c.id) {
+                <option [value]="c.id">{{ c.id }}</option>
+              }
+            </select>
+            <button type="button" class="btn-ghost" (click)="confirmAddChannel()" [disabled]="saving">Add</button>
+            <button type="button" class="btn-ghost" (click)="cancelAddChannel()">Cancel</button>
+          </div>
+        }
+
         @if (channelProgress(selectedCampaign).length > 0) {
           <div class="goal-list">
             @for (p of channelProgress(selectedCampaign); track p.channelId) {
@@ -291,6 +311,22 @@
                 } @else {
                   <span class="goal-progress">{{ p.planned }} planned, no goal set</span>
                   <button type="button" class="btn-ghost" (click)="startEditGoal(p.channelId, 0)">Set goal</button>
+                }
+
+                @if (confirmingRemoveChannelId !== p.channelId) {
+                  <button type="button" class="btn-danger" (click)="startRemoveChannel(p.channelId)">Remove channel</button>
+                } @else {
+                  <div class="remove-channel-confirm">
+                    <span>
+                      Remove "{{ p.channelId }}"? This can't be undone.
+                      @if (channelSlotCount(selectedCampaign, p.channelId) > 0) {
+                        {{ channelSlotCount(selectedCampaign, p.channelId) }} planned/queued/posted post(s) for it will
+                        be deleted from this campaign (the synced/posted media itself is untouched).
+                      }
+                    </span>
+                    <button type="button" class="btn-danger" (click)="confirmRemoveChannel(p.channelId)" [disabled]="saving">Yes, remove</button>
+                    <button type="button" class="btn-ghost" (click)="cancelRemoveChannel()">Cancel</button>
+                  </div>
                 }
               </div>
             }

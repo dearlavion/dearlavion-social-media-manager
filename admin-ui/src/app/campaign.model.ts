@@ -69,6 +69,8 @@ export interface Campaign {
   createdAt: string;
   slots: CampaignSlot[];
   channelTargets: ChannelTarget[];
+  /** Which channels this campaign involves -- independent of slots/goals, so a channel can be added before it has either. */
+  channelIds: string[];
 }
 
 /** Quick-pick stages offered by the builder, with generic (project-agnostic) default guidance text. */
@@ -102,6 +104,7 @@ export function newCampaign(name: string, goal: string): Campaign {
     createdAt: new Date().toISOString(),
     slots: [],
     channelTargets: [],
+    channelIds: [],
   };
 }
 
@@ -169,7 +172,11 @@ export interface ChannelProgress {
 export function channelProgress(campaign: Campaign): ChannelProgress[] {
   const targets = campaign.channelTargets ?? [];
   const targetByChannel = new Map(targets.map((t) => [t.channelId, t.targetCount]));
-  const channelIds = new Set<string>([...campaign.slots.map((s) => s.channelId), ...targetByChannel.keys()]);
+  const channelIds = new Set<string>([
+    ...(campaign.channelIds ?? []),
+    ...campaign.slots.map((s) => s.channelId),
+    ...targetByChannel.keys(),
+  ]);
 
   return [...channelIds].sort().map((channelId) => {
     const channelSlots = campaign.slots.filter((s) => s.channelId === channelId);

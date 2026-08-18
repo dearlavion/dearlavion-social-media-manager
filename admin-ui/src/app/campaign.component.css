@@ -265,6 +265,42 @@ label {
   margin-bottom: 10px;
 }
 
+/* CHANNELS: ADD/REMOVE */
+
+.channels-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.channels-header h3 {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  margin: 0;
+  color: var(--color-ink);
+}
+
+.add-channel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.remove-channel-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-basis: 100%;
+  padding: 8px;
+  border: 1px solid var(--color-coral-deep);
+  border-radius: 8px;
+  background: var(--tint-pink);
+  font-size: 0.82rem;
+  color: var(--color-ink);
+}
+
 /* PER-CHANNEL GOALS */
 
 .goal-list {

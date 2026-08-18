@@ -304,6 +304,14 @@
     removes the goal entirely.
   </p>
   <p>
+    The channel list itself isn't fixed at creation time either. The <strong>Channels</strong> section has its own
+    <strong>Add channel</strong> control (a dropdown of whichever channels aren't in the campaign yet) for bringing
+    in a channel you didn't select in step 1 — it shows up with no goal set, ready for planned posts or a goal.
+    Each channel row also has a <strong>Remove channel</strong> button, with an inline confirmation that warns if
+    that channel has any planned/queued/posted slots — removing it deletes those slots from the campaign too (the
+    actual synced/posted media in <code>inbox/</code>/<code>posted/</code> is untouched either way).
+  </p>
+  <p>
     Further down, <strong>All posts</strong> lists every slot in the campaign with an <strong>Edit</strong>
     button — clicking it switches straight to <strong>Content Queue</strong>, since that's where a post's
     stage/guidance actually gets edited (see its "Planned" section above), rather than duplicating that editing

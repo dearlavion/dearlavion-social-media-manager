@@ -89,6 +89,8 @@ export interface Campaign {
   createdAt: string;
   slots: CampaignSlot[];
   channelTargets: ChannelTarget[];
+  /** Which channels this campaign involves -- set by the admin UI, purely informational, post.ts doesn't act on it. */
+  channelIds: string[];
 }
 
 export function inboxRoot(projectId: string): string {
@@ -252,6 +254,9 @@ function assertValidCampaign(projectId: string, value: unknown, index: number): 
   if (c.status !== undefined && !['open', 'ongoing', 'done'].includes(c.status)) {
     throw new Error(`${path} (${c.id}): invalid "status" "${c.status}"`);
   }
+  if (c.channelIds !== undefined && !Array.isArray(c.channelIds)) {
+    throw new Error(`${path} (${c.id}): "channelIds" must be an array when present`);
+  }
 }
 
 /** Most projects won't have a campaigns.json at all -- absent file means no campaigns, not an error. */
@@ -268,7 +273,12 @@ export async function loadCampaigns(projectId: string): Promise<Campaign[]> {
     throw new Error(`config/${projectId}/campaigns.json must contain a JSON array`);
   }
   parsed.forEach((c, i) => assertValidCampaign(projectId, c, i));
-  return (parsed as Campaign[]).map((c) => ({ ...c, channelTargets: c.channelTargets ?? [], status: c.status ?? 'open' }));
+  return (parsed as Campaign[]).map((c) => ({
+    ...c,
+    channelTargets: c.channelTargets ?? [],
+    status: c.status ?? 'open',
+    channelIds: c.channelIds ?? [],
+  }));
 }
 
 export async function saveCampaigns(projectId: string, campaigns: Campaign[]): Promise<void> {
