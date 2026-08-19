@@ -13,6 +13,10 @@
         "targetCount": 7
       }
     ],
-    "status": "ongoing"
+    "status": "ongoing",
+    "channelIds": [
+      "travel-besty-instagram",
+      "travel-besty-tiktok"
+    ]
   }
 ]
