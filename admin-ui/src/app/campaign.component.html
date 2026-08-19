@@ -234,7 +234,7 @@
         }
         @if (!editingCampaignGoal) {
           <p class="hint campaign-goal-row">
-            {{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}
+            {{ selectedCampaign.goal || 'No goal set' }}
             <button type="button" class="btn-ghost" (click)="startEditCampaignGoal()">Edit goal</button>
           </p>
         } @else {
