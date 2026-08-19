@@ -101,16 +101,16 @@ export class QueueComponent {
     return this.selectedCampaignId ? this.campaigns.find((c) => c.id === this.selectedCampaignId) : undefined;
   }
 
-  /** The selected campaign alone once one's picked, otherwise every ongoing campaign -- what "in scope" for planning/linking narrows to. */
+  /** The selected campaign alone, or [] before one's picked -- what "in scope" for planning/linking narrows to. */
   private get campaignsInScope(): Campaign[] {
     const campaign = this.selectedCampaign;
-    return campaign ? [campaign] : this.campaigns;
+    return campaign ? [campaign] : [];
   }
 
-  /** Channel sections to actually show -- every project channel by default, or just the selected campaign's enabled channels once one's picked. */
+  /** Channel sections to actually show -- nothing until a campaign is picked, then just that campaign's enabled channels. */
   get displayChannels(): ChannelConfig[] {
     const campaign = this.selectedCampaign;
-    if (!campaign) return this.channels;
+    if (!campaign) return [];
     const memberIds = new Set(campaign.channelIds ?? []);
     return this.channels.filter((c) => memberIds.has(c.id) && c.enabled);
   }

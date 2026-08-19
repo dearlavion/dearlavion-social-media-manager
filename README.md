@@ -71,7 +71,7 @@ Workflows run on their cron schedule automatically (tunable per-workflow on the 
 
 ## Content Queue
 
-**Content Queue** (admin UI, left menu) shows a **Campaign** filter above the channel list, defaulting to "All channels" (every channel in the project, as before) — pick an ongoing campaign instead to narrow the page down to just that campaign's enabled channels (per its **Channels** section on the Campaigns page), so planning one campaign doesn't mean scrolling past every other channel. Picking a campaign also scopes the **Planned** list and link pickers below to just that campaign, and pre-fills the campaign field when adding a new planned post.
+**Content Queue** (admin UI, left menu) shows a **Campaign** picker above the channel list — no channels show until you pick one. Selecting an ongoing campaign scopes the whole page to just that campaign's enabled channels (per its **Channels** section on the Campaigns page), its **Planned** list, and its link pickers, and pre-fills the campaign field when adding a new planned post — so planning one campaign never means scrolling past every other channel or campaign in the project.
 
 Each shown channel then has two sections:
 

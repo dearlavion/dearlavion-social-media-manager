@@ -116,11 +116,11 @@
       <code>inbox/</code> tree in a single Git Trees API call (rather than one request per post folder, to stay
       well under GitHub's 60/hr unauthenticated rate limit) <em>and</em> the project's campaigns.</li>
     <li>
-      A <strong>Campaign</strong> filter appears above the channel list, defaulting to <strong>All channels</strong>.
-      Pick an ongoing campaign instead and the page narrows to just that campaign's <strong>enabled</strong>
-      channels (whatever's in its Channels section on the Campaigns page) — useful once a project has several
-      campaigns and channels, so planning one doesn't mean scrolling past every other channel. It also scopes the
-      Planned list/link pickers to that campaign, and pre-fills the campaign field when you add a new planned post.
+      A <strong>Campaign</strong> picker appears above the channel list — nothing shows below it until you pick
+      one. Selecting an ongoing campaign scopes the whole page to just that campaign's <strong>enabled</strong>
+      channels (whatever's in its Channels section on the Campaigns page), its Planned list, and its link pickers,
+      and pre-fills the campaign field when you add a new planned post — so planning one campaign never means
+      scrolling past every other channel or campaign in the project.
     </li>
     <li>
       <strong>Synced</strong> lists queued posts with a media-type badge (<code>image</code>, <code>video</code>,
