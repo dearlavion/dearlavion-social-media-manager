@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   post:
@@ -37,6 +38,7 @@ jobs:
         working-directory: automation
         env:
           BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_PROJECT_ID: ${{ github.event.inputs.project_id }}
           FORCE_CHANNEL_ID: ${{ github.event.inputs.channel_id }}
         run: npm run post
