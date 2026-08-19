@@ -236,12 +236,6 @@ label {
   color: var(--color-ink-soft);
 }
 
-.campaign-card-progress {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--color-coral-deep);
-}
-
 /* BUILDER */
 
 .form-grid {

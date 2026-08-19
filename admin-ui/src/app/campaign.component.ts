@@ -109,11 +109,6 @@ export class CampaignComponent {
     return nextOpenSlot(campaign);
   }
 
-  progressLabel(campaign: Campaign): string {
-    const posted = campaign.slots.filter((s) => s.status === 'posted').length;
-    return `${posted}/${campaign.slots.length} posted`;
-  }
-
   channelProgress(campaign: Campaign): ChannelProgress[] {
     return channelProgress(campaign);
   }
