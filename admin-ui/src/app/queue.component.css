@@ -338,6 +338,10 @@ label {
   flex-shrink: 0;
 }
 
+.campaign-filter-label {
+  max-width: 280px;
+}
+
 .target-date-label {
   max-width: 220px;
 }

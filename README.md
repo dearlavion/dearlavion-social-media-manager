@@ -71,7 +71,9 @@ Workflows run on their cron schedule automatically (tunable per-workflow on the 
 
 ## Content Queue
 
-**Content Queue** (admin UI, left menu) has two sections per channel:
+**Content Queue** (admin UI, left menu) shows a **Campaign** filter above the channel list, defaulting to "All channels" (every channel in the project, as before) — pick an ongoing campaign instead to narrow the page down to just that campaign's enabled channels (per its **Channels** section on the Campaigns page), so planning one campaign doesn't mean scrolling past every other channel. Picking a campaign also scopes the **Planned** list and link pickers below to just that campaign, and pre-fills the campaign field when adding a new planned post.
+
+Each shown channel then has two sections:
 
 - **Synced** — what's sitting in `inbox/<projectId>/<channelId>/` for the currently loaded project, oldest first — media type (single/carousel ×N/video) with thumbnails, whether a post has a custom `caption.txt`, and its position in that channel's FIFO queue (the oldest is tagged "Posts next run," since an enabled channel's oldest queued item goes out every time `post.yml` runs). It fetches the whole `inbox/` subtree in one Git Trees API call rather than one request per post folder, to stay well under GitHub's 60/hr unauthenticated rate limit.
 - **Planned (ongoing campaigns)** — a lightweight content-planning checklist, sourced from every campaign whose **status is `ongoing`** (loaded alongside the tree). Add a planned post directly here (pick which ongoing campaign it belongs to, a stage, guidance, and an optional **target date + time**), edit or remove it, and toggle a **todo / done** prep-status chip tracking whether you've actually created that content yet — independent of whether it's synced or posted. The target-date dropdown is generated from that post's campaign's start/end dates (or the next 30 days if unset).

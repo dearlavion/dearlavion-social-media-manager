@@ -47,6 +47,11 @@ export class QueueComponent {
   private campaigns: Campaign[] = [];
   private campaignsSha: string | null = null;
 
+  // Optional campaign filter -- null shows every channel (the old behavior); picking one narrows the channel
+  // sections below to just that campaign's enabled channels, so planning a specific campaign doesn't mean
+  // scrolling past every other channel in the project.
+  selectedCampaignId: string | null = null;
+
   // Adding a new planned post, one channel at a time.
   addingPlannedForChannel: string | null = null;
   newPlannedCampaignId = '';
@@ -81,7 +86,7 @@ export class QueueComponent {
   }
 
   openSlotsFor(post: QueuedPost): LinkedSlot[] {
-    return openSlotsForChannel(this.campaigns, post.channelId);
+    return openSlotsForChannel(this.campaignsInScope, post.channelId);
   }
 
   get hasOngoingCampaigns(): boolean {
@@ -92,8 +97,26 @@ export class QueueComponent {
     return this.campaigns;
   }
 
+  get selectedCampaign(): Campaign | undefined {
+    return this.selectedCampaignId ? this.campaigns.find((c) => c.id === this.selectedCampaignId) : undefined;
+  }
+
+  /** The selected campaign alone once one's picked, otherwise every ongoing campaign -- what "in scope" for planning/linking narrows to. */
+  private get campaignsInScope(): Campaign[] {
+    const campaign = this.selectedCampaign;
+    return campaign ? [campaign] : this.campaigns;
+  }
+
+  /** Channel sections to actually show -- every project channel by default, or just the selected campaign's enabled channels once one's picked. */
+  get displayChannels(): ChannelConfig[] {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return this.channels;
+    const memberIds = new Set(campaign.channelIds ?? []);
+    return this.channels.filter((c) => memberIds.has(c.id) && c.enabled);
+  }
+
   plannedFor(channelId: string): LinkedSlot[] {
-    return openSlotsForChannel(this.campaigns, channelId);
+    return openSlotsForChannel(this.campaignsInScope, channelId);
   }
 
   /** Synced posts for a channel not already claimed by any slot -- candidates for a Planned row's "Link media" action. */
@@ -123,6 +146,7 @@ export class QueueComponent {
       this.queuesByChannel = this.buildQueues(parseInboxTree(tree, this.project.id));
       this.campaigns = campaigns.filter((c) => c.status === 'ongoing');
       this.campaignsSha = sha;
+      this.selectedCampaignId = null;
       this.loaded = true;
     } catch (err) {
       this.errorMessage = err instanceof Error ? err.message : String(err);
@@ -154,7 +178,7 @@ export class QueueComponent {
 
   startAddPlanned(channelId: string): void {
     this.addingPlannedForChannel = channelId;
-    this.newPlannedCampaignId = this.campaigns[0]?.id ?? '';
+    this.newPlannedCampaignId = this.selectedCampaignId ?? this.campaigns[0]?.id ?? '';
     this.newPlannedStage = '';
     this.newPlannedGuidance = '';
     this.newPlannedTargetDate = '';

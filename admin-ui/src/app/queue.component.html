@@ -28,7 +28,39 @@
     }
 
     @if (loaded) {
-      @for (channel of channels; track channel.id) {
+      @if (hasOngoingCampaigns) {
+        <section class="card">
+          <label class="campaign-filter-label">
+            Campaign
+            <select [(ngModel)]="selectedCampaignId">
+              <option [ngValue]="null">All channels</option>
+              @for (c of ongoingCampaigns; track c.id) {
+                <option [ngValue]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </label>
+          <p class="hint">
+            @if (selectedCampaign) {
+              Showing only "{{ selectedCampaign.name }}"'s enabled channels, so planning this campaign doesn't mean
+              scrolling past every other channel.
+            } @else {
+              Pick a campaign to narrow the channels below to just its enabled ones — or leave on "All channels" to
+              see everything, like before.
+            }
+          </p>
+        </section>
+      }
+
+      @if (selectedCampaign && displayChannels.length === 0) {
+        <section class="card">
+          <p class="hint">
+            "{{ selectedCampaign.name }}" has no enabled channels yet — add one from its Channels section on the
+            Campaigns page first.
+          </p>
+        </section>
+      }
+
+      @for (channel of displayChannels; track channel.id) {
         <section class="card">
           <div class="card-header"><h2>{{ channel.id }} <span class="muted">({{ channel.platform }})</span></h2></div>
 

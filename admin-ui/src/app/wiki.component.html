@@ -116,6 +116,13 @@
       <code>inbox/</code> tree in a single Git Trees API call (rather than one request per post folder, to stay
       well under GitHub's 60/hr unauthenticated rate limit) <em>and</em> the project's campaigns.</li>
     <li>
+      A <strong>Campaign</strong> filter appears above the channel list, defaulting to <strong>All channels</strong>.
+      Pick an ongoing campaign instead and the page narrows to just that campaign's <strong>enabled</strong>
+      channels (whatever's in its Channels section on the Campaigns page) — useful once a project has several
+      campaigns and channels, so planning one doesn't mean scrolling past every other channel. It also scopes the
+      Planned list/link pickers to that campaign, and pre-fills the campaign field when you add a new planned post.
+    </li>
+    <li>
       <strong>Synced</strong> lists queued posts with a media-type badge (<code>image</code>, <code>video</code>,
       or <code>carousel ×N</code>), thumbnails, whether it has a custom caption, and its position in that channel's
       FIFO queue — the oldest one is tagged <strong>Posts next run</strong>, since each enabled channel's oldest
