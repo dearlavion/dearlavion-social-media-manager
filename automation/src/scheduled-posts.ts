@@ -182,6 +182,10 @@ async function main() {
               claimed.add(slot.linkedPostPath);
               campaignsDirty = true;
               console.log(`${label}: found "${slot.expectedFileName}" in Drive, downloaded to "${slot.linkedPostPath}"`);
+              // Don't fall through to publish this same run -- the file only exists on local disk right now, not
+              // yet on GitHub (the "Commit posted state" step pushes it *after* this script finishes), so Buffer's
+              // fetch of the raw.githubusercontent.com URL would fail. Publish next run instead, once it's pushed.
+              continue;
             }
           }
         }
