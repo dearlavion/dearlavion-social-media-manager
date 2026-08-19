@@ -81,6 +81,10 @@ export class CampaignComponent {
   editingName = false;
   editingNameValue = '';
 
+  // Editing an existing campaign's overall goal text, in detail mode
+  editingCampaignGoal = false;
+  editingCampaignGoalValue = '';
+
   // Deleting an existing campaign, in detail mode
   confirmingDelete = false;
 
@@ -213,6 +217,7 @@ export class CampaignComponent {
     this.editingGoalChannelId = null;
     this.editingDates = false;
     this.editingName = false;
+    this.editingCampaignGoal = false;
     this.confirmingDelete = false;
     this.addingChannel = false;
     this.confirmingRemoveChannelId = null;
@@ -439,6 +444,27 @@ export class CampaignComponent {
     if (!campaign || !name) return;
     campaign.name = name;
     this.editingName = false;
+    await this.save();
+  }
+
+  // --- detail: editing an existing campaign's overall goal text ---
+
+  startEditCampaignGoal(): void {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    this.editingCampaignGoalValue = campaign.goal;
+    this.editingCampaignGoal = true;
+  }
+
+  cancelEditCampaignGoal(): void {
+    this.editingCampaignGoal = false;
+  }
+
+  async saveEditCampaignGoal(): Promise<void> {
+    const campaign = this.selectedCampaign;
+    if (!campaign) return;
+    campaign.goal = this.editingCampaignGoalValue.trim();
+    this.editingCampaignGoal = false;
     await this.save();
   }
 

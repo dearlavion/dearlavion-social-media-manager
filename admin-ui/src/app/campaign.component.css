@@ -55,6 +55,19 @@
   min-width: 180px;
 }
 
+.campaign-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.campaign-goal-input {
+  flex: 1;
+  min-width: 180px;
+  font-size: 0.85rem;
+}
+
 button {
   border: none;
   border-radius: 9px;

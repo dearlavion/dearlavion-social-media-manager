@@ -232,7 +232,18 @@
             <button type="button" class="btn-ghost" (click)="cancelEditName()">Cancel</button>
           </div>
         }
-        <p class="hint">{{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}</p>
+        @if (!editingCampaignGoal) {
+          <p class="hint campaign-goal-row">
+            {{ selectedCampaign.goal || 'No goal set' }} — {{ progressLabel(selectedCampaign) }}
+            <button type="button" class="btn-ghost" (click)="startEditCampaignGoal()">Edit goal</button>
+          </p>
+        } @else {
+          <div class="campaign-goal-row">
+            <input type="text" [(ngModel)]="editingCampaignGoalValue" class="campaign-goal-input" placeholder="e.g. Grow instagram" (keyup.enter)="saveEditCampaignGoal()" />
+            <button type="button" class="btn-ghost" (click)="saveEditCampaignGoal()" [disabled]="saving">Save</button>
+            <button type="button" class="btn-ghost" (click)="cancelEditCampaignGoal()">Cancel</button>
+          </div>
+        }
 
         <div class="meta-row">
           <label class="status-select-label">
