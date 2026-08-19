@@ -136,7 +136,14 @@
                 <div class="planned-item">
                   @if (editingPlannedSlotId === target.slot.id) {
                     <div class="planned-edit-form">
-                      <input [(ngModel)]="editingPlannedStage" placeholder="stage" class="planned-stage-input" />
+                      <select [(ngModel)]="editingPlannedStage" class="planned-stage-input">
+                        @if (!isKnownStage(editingPlannedStage)) {
+                          <option [value]="editingPlannedStage">{{ editingPlannedStage }} (custom)</option>
+                        }
+                        @for (s of defaultStages; track s.stage) {
+                          <option [value]="s.stage">{{ s.stage }}</option>
+                        }
+                      </select>
                       <textarea [(ngModel)]="editingPlannedGuidance" rows="2" placeholder="guidance"></textarea>
                       <div class="target-date-row">
                         <label class="target-date-label">
@@ -232,7 +239,11 @@
               <div class="form-row">
                 <label>
                   Stage
-                  <input [(ngModel)]="newPlannedStage" placeholder="e.g. awareness" />
+                  <select [ngModel]="newPlannedStage" (ngModelChange)="selectPlannedStage($event)">
+                    @for (s of defaultStages; track s.stage) {
+                      <option [value]="s.stage">{{ s.stage }}</option>
+                    }
+                  </select>
                 </label>
                 <label>
                   Target date
@@ -272,17 +283,12 @@
                   }
                 </p>
               }
-              <div class="chip-row">
-                @for (s of defaultStages; track s.stage) {
-                  <button type="button" class="chip" (click)="pickPlannedStage(s.stage, s.guidance)">{{ s.stage }}</button>
-                }
-              </div>
               <label class="guidance-label">
                 Guidance
                 <textarea [(ngModel)]="newPlannedGuidance" rows="2" placeholder="What should this post actually be?"></textarea>
               </label>
               <div class="planned-edit-actions">
-                <button type="button" class="btn-primary" [disabled]="saving || !newPlannedStage.trim()" (click)="addPlanned(channel.id)">
+                <button type="button" class="btn-primary" [disabled]="saving" (click)="addPlanned(channel.id)">
                   {{ saving ? 'Adding…' : 'Add planned post' }}
                 </button>
                 <button type="button" class="btn-ghost" (click)="cancelAddPlanned()">Cancel</button>

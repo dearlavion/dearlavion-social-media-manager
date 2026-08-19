@@ -177,8 +177,7 @@ export class QueueComponent {
 
   startAddPlanned(channelId: string): void {
     this.addingPlannedForChannel = channelId;
-    this.newPlannedStage = '';
-    this.newPlannedGuidance = '';
+    this.selectPlannedStage(this.defaultStages[0].stage);
     this.newPlannedTargetDate = '';
     this.newPlannedTargetTime = '';
     this.newPlannedExpectedFileName = '';
@@ -189,9 +188,10 @@ export class QueueComponent {
     this.addingPlannedForChannel = null;
   }
 
-  pickPlannedStage(stage: string, guidance: string): void {
+  /** Stage is a closed set (awareness/consideration/conversion/loyalty) -- picking one also fills its default guidance, same as the old quick-pick chips did. */
+  selectPlannedStage(stage: string): void {
     this.newPlannedStage = stage;
-    this.newPlannedGuidance = guidance;
+    this.newPlannedGuidance = this.defaultStages.find((s) => s.stage === stage)?.guidance ?? '';
   }
 
   async addPlanned(channelId: string): Promise<void> {
@@ -218,6 +218,11 @@ export class QueueComponent {
   }
 
   // --- planned posts: edit / remove / prep status ---
+
+  /** True for the four standard stages -- false for a custom one typed before this became a closed dropdown, so the edit form can still show it as an option. */
+  isKnownStage(stage: string): boolean {
+    return this.defaultStages.some((s) => s.stage === stage);
+  }
 
   startEditPlanned(slot: CampaignSlot): void {
     this.editingPlannedSlotId = slot.id;

@@ -139,23 +139,6 @@ label {
   flex-shrink: 0;
 }
 
-.chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 8px 0;
-}
-
-.chip {
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-  background: var(--tint-cream);
-  border: 1px solid var(--color-line);
-  color: var(--color-ink);
-  font-size: 0.76rem;
-  font-weight: 600;
-}
-
 .hint {
   color: var(--color-ink-soft);
   font-size: 0.8rem;
