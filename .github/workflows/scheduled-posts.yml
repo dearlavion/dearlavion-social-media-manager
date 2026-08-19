@@ -47,6 +47,12 @@ jobs:
         with:
           commit_message: 'chore: scheduled post run'
           file_pattern: 'inbox/** posted/** config/**/campaigns.json config/**/channels.json'
+          # -A is required: plain `git add <pattern>` (this action's default) only stages new/modified files,
+          # never deletions. Without it, movePosted()'s inbox/ -> posted/ rename never gets its inbox/ side of
+          # the move committed -- the old file stays tracked in git and comes back on every fresh checkout,
+          # even though it's actually gone from disk. That silently caused the same post to be picked up and
+          # published again by every subsequent run.
+          add_options: '-A'
 
       # Same pattern as reminders.yml: the "Publish due scheduled slots" step
       # above opens a GitHub issue with the actual message for anything
