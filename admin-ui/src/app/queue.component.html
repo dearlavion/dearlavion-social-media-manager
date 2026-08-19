@@ -231,14 +231,6 @@
             <div class="planned-add-form">
               <div class="form-row">
                 <label>
-                  Campaign
-                  <select [(ngModel)]="newPlannedCampaignId">
-                    @for (c of ongoingCampaigns; track c.id) {
-                      <option [value]="c.id">{{ c.name }}</option>
-                    }
-                  </select>
-                </label>
-                <label>
                   Stage
                   <input [(ngModel)]="newPlannedStage" placeholder="e.g. awareness" />
                 </label>
@@ -246,7 +238,7 @@
                   Target date
                   <select [(ngModel)]="newPlannedTargetDate">
                     <option value="">No target date</option>
-                    @for (d of dateOptionsForCampaign(newPlannedCampaignId); track d) {
+                    @for (d of dateOptionsForCampaign(selectedCampaignId!); track d) {
                       <option [value]="d">{{ d | date: 'EEE, MMM d' }}</option>
                     }
                   </select>

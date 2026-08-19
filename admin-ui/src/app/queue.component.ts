@@ -54,7 +54,6 @@ export class QueueComponent {
 
   // Adding a new planned post, one channel at a time.
   addingPlannedForChannel: string | null = null;
-  newPlannedCampaignId = '';
   newPlannedStage = '';
   newPlannedGuidance = '';
   newPlannedTargetDate = '';
@@ -178,7 +177,6 @@ export class QueueComponent {
 
   startAddPlanned(channelId: string): void {
     this.addingPlannedForChannel = channelId;
-    this.newPlannedCampaignId = this.selectedCampaignId ?? this.campaigns[0]?.id ?? '';
     this.newPlannedStage = '';
     this.newPlannedGuidance = '';
     this.newPlannedTargetDate = '';
@@ -198,7 +196,7 @@ export class QueueComponent {
 
   async addPlanned(channelId: string): Promise<void> {
     const stage = this.newPlannedStage.trim();
-    const campaign = this.campaigns.find((c) => c.id === this.newPlannedCampaignId);
+    const campaign = this.selectedCampaign;
     if (!stage || !campaign) return;
     const slot = newSlot(stage, this.newPlannedGuidance.trim(), channelId);
     if (this.newPlannedTargetDate) {
