@@ -250,19 +250,33 @@ async function main() {
           continue; // leave it linked/queued so the next run retries it, and move on to the next slot
         }
 
-        await movePosted(postDir, project.id, channel.id);
-        channel.lastPostedAt = now.toISOString();
-        channelsDirty = true;
-
+        // Buffer already accepted the post -- from here on, nothing may throw uncaught, or a housekeeping
+        // failure (e.g. movePosted's rename) would crash the script before this gets saved, leaving the slot
+        // "queued" with the same linkedPostPath so the next run publishes it again. Mark posted first, then
+        // best-effort the rest.
         slot.status = 'posted';
         slot.postedAt = now.toISOString();
         campaignsDirty = true;
 
-        await openAndCloseNotificationIssue(
-          `✅ Scheduled post published: ${campaign.name} — ${slot.stage}`,
-          publishOutcomeBody(project, channel, slot.linkedPostPath, mediaType, media.length, publisherId),
-          ['post-success'],
-        );
+        try {
+          await movePosted(postDir, project.id, channel.id);
+          channel.lastPostedAt = now.toISOString();
+          channelsDirty = true;
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.log(`::warning::${label}: posted successfully, but failed to move "${slot.linkedPostPath}" to posted/: ${message}`);
+        }
+
+        try {
+          await openAndCloseNotificationIssue(
+            `✅ Scheduled post published: ${campaign.name} — ${slot.stage}`,
+            publishOutcomeBody(project, channel, slot.linkedPostPath, mediaType, media.length, publisherId),
+            ['post-success'],
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.log(`::warning::${label}: posted successfully, but the success notification failed: ${message}`);
+        }
       }
     }
 

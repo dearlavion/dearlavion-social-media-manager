@@ -148,18 +148,31 @@ async function main() {
         continue; // don't abort the rest of this channel's turn or the other channels -- try again next run
       }
 
+      // Buffer already accepted the post -- from here on, nothing may throw uncaught, or a housekeeping
+      // failure (e.g. movePosted's rename) would crash the script before this gets saved, aborting every
+      // remaining channel in this run too. Mark posted first, then best-effort the rest.
       const linkedPostPath = repoRelativePath(postDir);
-      await movePosted(postDir, project.id, channel.id);
       channel.lastPostedAt = now.toISOString();
-
-      await openAndCloseNotificationIssue(
-        `✅ Posted: ${project.name} / ${channel.id}`,
-        postOutcomeBody(project, channel, postName, mediaType, media.length, publisherId),
-        ['post-success'],
-      );
-
       if (markLinkedCampaignSlotPosted(campaigns, linkedPostPath, now)) {
         campaignsDirty = true;
+      }
+
+      try {
+        await movePosted(postDir, project.id, channel.id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.log(`::warning::[${project.id}/${channel.id}] posted successfully, but failed to move "${postName}" to posted/: ${message}`);
+      }
+
+      try {
+        await openAndCloseNotificationIssue(
+          `✅ Posted: ${project.name} / ${channel.id}`,
+          postOutcomeBody(project, channel, postName, mediaType, media.length, publisherId),
+          ['post-success'],
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.log(`::warning::[${project.id}/${channel.id}] posted successfully, but the success notification failed: ${message}`);
       }
     }
 
