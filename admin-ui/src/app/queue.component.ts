@@ -56,6 +56,7 @@ export class QueueComponent {
   addingPlannedForChannel: string | null = null;
   newPlannedStage = '';
   newPlannedGuidance = '';
+  newPlannedCaption = '';
   newPlannedTargetDate = '';
   newPlannedTargetTime = '';
   newPlannedExpectedFileName = '';
@@ -65,6 +66,7 @@ export class QueueComponent {
   editingPlannedSlotId: string | null = null;
   editingPlannedStage = '';
   editingPlannedGuidance = '';
+  editingPlannedCaption = '';
   editingPlannedTargetDate = '';
   editingPlannedTargetTime = '';
   editingPlannedExpectedFileName = '';
@@ -178,6 +180,7 @@ export class QueueComponent {
   startAddPlanned(channelId: string): void {
     this.addingPlannedForChannel = channelId;
     this.selectPlannedStage(this.defaultStages[0].stage);
+    this.newPlannedCaption = '';
     this.newPlannedTargetDate = '';
     this.newPlannedTargetTime = '';
     this.newPlannedExpectedFileName = '';
@@ -199,6 +202,9 @@ export class QueueComponent {
     const campaign = this.selectedCampaign;
     if (!stage || !campaign) return;
     const slot = newSlot(stage, this.newPlannedGuidance.trim(), channelId);
+    if (this.newPlannedCaption.trim()) {
+      slot.caption = this.newPlannedCaption.trim();
+    }
     if (this.newPlannedTargetDate) {
       slot.targetDate = this.newPlannedTargetDate;
       if (this.newPlannedTargetTime) {
@@ -228,6 +234,7 @@ export class QueueComponent {
     this.editingPlannedSlotId = slot.id;
     this.editingPlannedStage = slot.stage;
     this.editingPlannedGuidance = slot.guidance;
+    this.editingPlannedCaption = slot.caption ?? '';
     this.editingPlannedTargetDate = slot.targetDate ?? '';
     this.editingPlannedTargetTime = slot.targetTime ?? '';
     this.editingPlannedExpectedFileName = slot.expectedFileName ?? '';
@@ -243,6 +250,7 @@ export class QueueComponent {
     if (!stage) return;
     slot.stage = stage;
     slot.guidance = this.editingPlannedGuidance.trim();
+    slot.caption = this.editingPlannedCaption.trim() || undefined;
     slot.targetDate = this.editingPlannedTargetDate || undefined;
     slot.targetTime = this.editingPlannedTargetDate && this.editingPlannedTargetTime ? this.editingPlannedTargetTime : undefined;
     const newTargetDueAt =

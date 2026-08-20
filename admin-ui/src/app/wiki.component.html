@@ -144,10 +144,19 @@
   <ul>
     <li><strong>+ Add planned post</strong> — pick a <strong>stage</strong> (<code>awareness</code> /
       <code>consideration</code> / <code>conversion</code> / <code>loyalty</code> — picking one also fills its
-      default guidance text, which you can then edit freely), and optionally a
-      <strong>target date and time</strong> — creates a new slot directly on the campaign you picked above, without
-      going through the builder.</li>
-    <li><strong>Edit</strong> a planned post's stage/guidance/target date/time inline, or <strong>Remove</strong> it entirely. A slot created before stage became a fixed dropdown may show its original custom text as an extra "(custom)" option — pick one of the four standard stages to replace it.</li>
+      default guidance text, which you can then edit freely), optionally a <strong>Caption</strong> to actually
+      publish with the image, and optionally a <strong>target date and time</strong> — creates a new slot directly
+      on the campaign you picked above, without going through the builder.</li>
+    <li><strong>Edit</strong> a planned post's stage/guidance/caption/target date/time inline, or
+      <strong>Remove</strong> it entirely. A slot created before stage became a fixed dropdown may show its
+      original custom text as an extra "(custom)" option — pick one of the four standard stages to replace it.</li>
+    <li>
+      <strong>Caption</strong> is stored on the slot itself, not written to a file — at publish time it takes
+      priority over a <code>caption.txt</code> in the linked post's folder if one exists. It's only read once, at
+      the moment the slot actually publishes, so editing it after the slot is already <code>queued</code> or
+      <code>posted</code> changes what's stored going forward but has no effect on anything already sent to
+      Buffer. Leave it blank to keep using <code>caption.txt</code> (or no caption at all) as before.
+    </li>
     <li>
       For an <strong>Instagram</strong> channel, an <strong>Instagram post type</strong> dropdown (post / story / reel)
       also appears — this replaces the old channel-level default entirely, since different planned posts on the same

@@ -145,6 +145,7 @@
                         }
                       </select>
                       <textarea [(ngModel)]="editingPlannedGuidance" rows="2" placeholder="guidance"></textarea>
+                      <textarea [(ngModel)]="editingPlannedCaption" rows="2" placeholder="caption to post with the image (optional -- overrides caption.txt)"></textarea>
                       <div class="target-date-row">
                         <label class="target-date-label">
                           Target date
@@ -203,6 +204,9 @@
                     }
                     @if (target.slot.instagramPostType) {
                       <span class="post-type-badge">{{ target.slot.instagramPostType }}</span>
+                    }
+                    @if (target.slot.caption) {
+                      <span class="expected-filename-badge">✎ {{ target.slot.caption }}</span>
                     }
                     <button
                       type="button"
@@ -286,6 +290,10 @@
               <label class="guidance-label">
                 Guidance
                 <textarea [(ngModel)]="newPlannedGuidance" rows="2" placeholder="What should this post actually be?"></textarea>
+              </label>
+              <label class="guidance-label">
+                Caption (optional)
+                <textarea [(ngModel)]="newPlannedCaption" rows="2" placeholder="Caption to post with the image -- overrides a caption.txt file if one gets added later"></textarea>
               </label>
               <div class="planned-edit-actions">
                 <button type="button" class="btn-primary" [disabled]="saving" (click)="addPlanned(channel.id)">

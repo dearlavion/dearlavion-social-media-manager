@@ -66,6 +66,8 @@ export interface CampaignSlot {
   expectedFileName?: string;
   /** Only meaningful when the slot's channel is Instagram -- Buffer requires this on every Instagram post. Defaults to "post" at publish time when unset. */
   instagramPostType?: InstagramPostType;
+  /** Takes priority over a post folder's caption.txt file at publish time when set -- see resolveCaption() in post-helpers.ts. */
+  caption?: string;
   linkedPostPath?: string;
   postedAt?: string;
 }

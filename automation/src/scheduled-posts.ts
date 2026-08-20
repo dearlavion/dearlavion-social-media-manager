@@ -229,7 +229,7 @@ async function main() {
           continue;
         }
 
-        const caption = await resolveCaption(postDir);
+        const caption = await resolveCaption(postDir, slot.caption);
         const publisherId = channel.publisher ?? 'buffer';
         const publish = getPublisher(publisherId);
         const mediaType = media.length === 1 ? media[0].type : 'carousel';

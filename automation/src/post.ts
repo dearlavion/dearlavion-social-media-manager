@@ -123,12 +123,12 @@ async function main() {
         continue;
       }
 
-      const caption = await resolveCaption(postDir);
+      // A regular synced post isn't necessarily linked to a campaign slot -- falls through to buffer.ts's own "post" default when there's no slot (or the slot didn't set one).
+      const linkedSlot = findSlotByLinkedPath(campaigns, repoRelativePath(postDir));
+      const caption = await resolveCaption(postDir, linkedSlot?.caption);
       const publisherId = channel.publisher ?? 'buffer';
       const publish = getPublisher(publisherId);
       const mediaType = media.length === 1 ? media[0].type : 'carousel';
-      // A regular synced post isn't necessarily linked to a campaign slot -- falls through to buffer.ts's own "post" default when there's no slot (or the slot didn't set one).
-      const linkedSlot = findSlotByLinkedPath(campaigns, repoRelativePath(postDir));
 
       console.log(
         `[${project.id}/${channel.id}] posting "${postName}" (${mediaType}, ${media.length} item(s)) to ${channel.platform} via ${publisherId}`,

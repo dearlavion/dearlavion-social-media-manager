@@ -39,7 +39,11 @@ export async function readPostMedia(postDir: string): Promise<PostMedia[]> {
   return media;
 }
 
-export async function resolveCaption(postDir: string): Promise<string> {
+/** A campaign slot's own caption wins when set -- caption.txt stays the fallback for anything not linked to a slot, or a slot with no caption set. */
+export async function resolveCaption(postDir: string, slotCaption?: string): Promise<string> {
+  if (slotCaption && slotCaption.trim()) {
+    return slotCaption.trim();
+  }
   try {
     const custom = await readFile(path.join(postDir, CAPTION_FILENAME), 'utf-8');
     return custom.trim();
