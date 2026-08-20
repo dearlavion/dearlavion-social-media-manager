@@ -1,4 +1,4 @@
-import { readdir, mkdir, rename, readFile } from 'node:fs/promises';
+import { readdir, mkdir, rename, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { publicRawUrl, postedRoot } from './config.js';
 import type { Campaign, CampaignSlot } from './config.js';
@@ -55,5 +55,11 @@ export async function resolveCaption(postDir: string, slotCaption?: string): Pro
 export async function movePosted(postDir: string, projectId: string, channelId: string): Promise<void> {
   const destParent = path.join(postedRoot(projectId), channelId);
   await mkdir(destParent, { recursive: true });
-  await rename(postDir, path.join(destParent, path.basename(postDir)));
+  const dest = path.join(destParent, path.basename(postDir));
+  // postFolderName is derived from the source Drive file's own metadata, so reusing the same physical file for a
+  // later, different post produces the identical folder name -- rename() can't land on a non-empty destination
+  // that's still around from the earlier archive, so clear it first. The newer post's copy is authoritative;
+  // content is identical anyway since it's the same source file.
+  await rm(dest, { recursive: true, force: true });
+  await rename(postDir, dest);
 }

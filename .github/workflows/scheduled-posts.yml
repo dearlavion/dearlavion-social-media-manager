@@ -12,6 +12,13 @@ permissions:
   contents: write
   issues: write
 
+# Shared with post.yml -- see its comment. Runs here are normally short (well under a minute), so queuing
+# behind a post.yml run costs little, and it's what actually prevents the two workflows from racing to
+# publish the same inbox/ folder.
+concurrency:
+  group: automation-publish
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
