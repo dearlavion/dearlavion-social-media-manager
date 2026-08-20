@@ -26,13 +26,15 @@ export function postFolderName(entry: DriveEntry): string {
   return `${prefix}-${sanitize(entry.name)}`;
 }
 
-export async function downloadEntry(entry: DriveEntry, destDir: string, label: string): Promise<void> {
+/** Returns whether it actually wrote a file -- false (skipped by the size guard) means destDir may not even exist yet. */
+export async function downloadEntry(entry: DriveEntry, destDir: string, label: string): Promise<boolean> {
   if (exceedsSizeGuard(entry)) {
     const mb = Math.round(Number(entry.size) / 1024 / 1024);
     console.log(`${label} skipping "${entry.name}" -- ${mb}MB exceeds the ${MAX_FILE_BYTES / 1024 / 1024}MB guard`);
-    return;
+    return false;
   }
   const destPath = path.join(destDir, sanitize(entry.name));
   console.log(`${label} downloading "${entry.name}" -> ${destPath}`);
   await downloadFile(entry.id, destPath);
+  return true;
 }

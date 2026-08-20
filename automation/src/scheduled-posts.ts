@@ -13,8 +13,8 @@ import {
 } from './config.js';
 import type { Campaign, CampaignSlot, Project } from './config.js';
 import { getPublisher } from './publishers/index.js';
-import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted } from './post-helpers.js';
-import { findFileByName } from './drive.js';
+import { IMAGE_EXTENSIONS, VIDEO_EXTENSIONS, MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, writeDriveSourceId, readDriveSourceId } from './post-helpers.js';
+import { findFileByName, moveToPostedFolder } from './drive.js';
 import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
 import { openNotificationIssue, openAndCloseNotificationIssue } from './github-issues.js';
 
@@ -174,7 +174,9 @@ async function main() {
             });
             if (driveHit) {
               const postDir = path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit));
-              await downloadEntry(driveHit, postDir, label);
+              if (await downloadEntry(driveHit, postDir, label)) {
+                await writeDriveSourceId(postDir, driveHit.id);
+              }
               channel.syncedDriveFileIds.push(driveHit.id);
               channelsDirty = true;
               slot.linkedPostPath = repoRelativePath(postDir);
@@ -258,6 +260,9 @@ async function main() {
         slot.postedAt = now.toISOString();
         campaignsDirty = true;
 
+        // Read before movePosted relocates postDir out from under this path.
+        const driveSourceId = await readDriveSourceId(postDir);
+
         try {
           await movePosted(postDir, project.id, channel.id);
           channel.lastPostedAt = now.toISOString();
@@ -265,6 +270,15 @@ async function main() {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           console.log(`::warning::${label}: posted successfully, but failed to move "${slot.linkedPostPath}" to posted/: ${message}`);
+        }
+
+        if (driveSourceId) {
+          try {
+            await moveToPostedFolder(driveSourceId, channel.driveFolderId);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            console.log(`::warning::${label}: posted successfully, but failed to move the source file in Drive: ${message}`);
+          }
         }
 
         try {

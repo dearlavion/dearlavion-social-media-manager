@@ -1,4 +1,4 @@
-import { readdir, mkdir, rename, readFile, rm } from 'node:fs/promises';
+import { readdir, mkdir, rename, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { publicRawUrl, postedRoot } from './config.js';
 import type { Campaign, CampaignSlot } from './config.js';
@@ -16,6 +16,7 @@ export function findSlotByLinkedPath(campaigns: Campaign[], linkedPostPath: stri
 export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 export const VIDEO_EXTENSIONS = new Set(['.mp4', '.mov', '.webm']);
 export const CAPTION_FILENAME = 'caption.txt';
+export const DRIVE_SOURCE_ID_FILENAME = '.drive-source-id';
 /** Instagram's hard cap on carousel items -- other platforms are more lenient, this is the binding one. */
 export const MAX_CAROUSEL_ITEMS = 10;
 
@@ -25,7 +26,9 @@ export const MAX_CAROUSEL_ITEMS = 10;
  * its media, resolving its caption, and moving it to posted/ once done.
  */
 export async function readPostMedia(postDir: string): Promise<PostMedia[]> {
-  const files = (await readdir(postDir)).filter((f) => f !== CAPTION_FILENAME).sort();
+  const files = (await readdir(postDir))
+    .filter((f) => f !== CAPTION_FILENAME && f !== DRIVE_SOURCE_ID_FILENAME)
+    .sort();
   const media: PostMedia[] = [];
   for (const file of files) {
     const ext = path.extname(file).toLowerCase();
@@ -49,6 +52,21 @@ export async function resolveCaption(postDir: string, slotCaption?: string): Pro
     return custom.trim();
   } catch {
     return '';
+  }
+}
+
+/** Records which Drive file/folder a synced post folder came from, so a later successful publish can relocate it in Drive too. */
+export async function writeDriveSourceId(postDir: string, driveId: string): Promise<void> {
+  await writeFile(path.join(postDir, DRIVE_SOURCE_ID_FILENAME), driveId, 'utf-8');
+}
+
+/** Null for posts synced before this existed, or media added to the repo by hand -- both fine to just skip the Drive-side move for. */
+export async function readDriveSourceId(postDir: string): Promise<string | null> {
+  try {
+    const id = await readFile(path.join(postDir, DRIVE_SOURCE_ID_FILENAME), 'utf-8');
+    return id.trim() || null;
+  } catch {
+    return null;
   }
 }
 

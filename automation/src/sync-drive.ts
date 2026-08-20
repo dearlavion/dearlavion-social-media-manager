@@ -2,6 +2,7 @@ import path from 'node:path';
 import { loadProjects, loadChannels, saveChannels, inboxRoot } from './config.js';
 import { listNewEntries, listFolderChildren, isFolder } from './drive.js';
 import { postFolderName, downloadEntry } from './drive-sync-helpers.js';
+import { writeDriveSourceId } from './post-helpers.js';
 export { MAX_FILE_BYTES, exceedsSizeGuard } from './drive-sync-helpers.js';
 
 async function main() {
@@ -36,12 +37,18 @@ async function main() {
             console.log(`${label} "${entry.name}" is an empty folder, skipping`);
           } else {
             console.log(`${label} syncing carousel "${entry.name}" (${children.length} item(s))`);
+            let anyDownloaded = false;
             for (const child of children) {
-              await downloadEntry(child, postDir, label);
+              if (await downloadEntry(child, postDir, label)) anyDownloaded = true;
+            }
+            // The whole carousel's source is this one subfolder -- moving it later (moveToPostedFolder) relocates
+            // every child with it in one call. Skip if every child tripped the size guard (postDir never got created).
+            if (anyDownloaded) {
+              await writeDriveSourceId(postDir, entry.id);
             }
           }
-        } else {
-          await downloadEntry(entry, postDir, label);
+        } else if (await downloadEntry(entry, postDir, label)) {
+          await writeDriveSourceId(postDir, entry.id);
         }
 
         // The whole top-level entry (file or folder) counts as synced once

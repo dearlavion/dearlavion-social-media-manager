@@ -40,7 +40,10 @@ function driveClient() {
   }
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+    // Full access, not drive.readonly -- moveToPostedFolder() needs to write. drive.file won't work since these
+    // files are shared with the service account, not created by it. Requires the Drive folder(s) actually be
+    // re-shared as Editor (not Viewer) for the service account's email -- this scope alone doesn't grant that.
+    scopes: ['https://www.googleapis.com/auth/drive'],
   });
   return google.drive({ version: 'v3', auth });
 }
@@ -115,5 +118,47 @@ export async function downloadFile(fileId: string, destPath: string): Promise<vo
   await new Promise<void>((resolve, reject) => {
     const dest = createWriteStream(destPath);
     res.data.on('end', resolve).on('error', reject).pipe(dest);
+  });
+}
+
+const POSTED_FOLDER_NAME = '_posted';
+
+/** Finds (or creates) the "_posted" subfolder directly under a channel's Drive folder -- where published source files get relocated to. */
+async function resolvePostedFolderId(drive: ReturnType<typeof google.drive>, sourceFolderId: string): Promise<string> {
+  const existing = await drive.files.list({
+    q: `'${sourceFolderId}' in parents and name = '${POSTED_FOLDER_NAME}' and mimeType = '${FOLDER_MIME_TYPE}' and trashed = false`,
+    fields: 'files(id)',
+  });
+  const [hit] = existing.data.files ?? [];
+  if (hit?.id) return hit.id;
+
+  const created = await drive.files.create({
+    requestBody: { name: POSTED_FOLDER_NAME, mimeType: FOLDER_MIME_TYPE, parents: [sourceFolderId] },
+    fields: 'id',
+  });
+  if (!created.data.id) {
+    throw new Error(`Drive didn't return an id for the newly-created "${POSTED_FOLDER_NAME}" folder`);
+  }
+  return created.data.id;
+}
+
+/**
+ * Moves a published post's source file (or, for a carousel, its whole source subfolder) into a "_posted"
+ * subfolder of the channel's Drive folder -- keeps it out of future sync-drive sweeps and expectedFileName
+ * lookups (both query direct children of the channel folder) without touching its name, so an intentional
+ * reuse of the same file for an earlier post doesn't get silently broken, only prevented going forward.
+ */
+export async function moveToPostedFolder(entryId: string, sourceFolderId: string): Promise<void> {
+  if (DRY_RUN) {
+    console.log(`[DRY_RUN] would move Drive entry ${entryId} into "${POSTED_FOLDER_NAME}" under folder ${sourceFolderId}`);
+    return;
+  }
+  const drive = driveClient();
+  const postedFolderId = await resolvePostedFolderId(drive, sourceFolderId);
+  await drive.files.update({
+    fileId: entryId,
+    addParents: postedFolderId,
+    removeParents: sourceFolderId,
+    fields: 'id, parents',
   });
 }

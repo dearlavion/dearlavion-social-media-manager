@@ -11,7 +11,8 @@ import {
 } from './config.js';
 import type { Campaign, Project } from './config.js';
 import { getPublisher } from './publishers/index.js';
-import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, findSlotByLinkedPath } from './post-helpers.js';
+import { MAX_CAROUSEL_ITEMS, readPostMedia, resolveCaption, movePosted, findSlotByLinkedPath, readDriveSourceId } from './post-helpers.js';
+import { moveToPostedFolder } from './drive.js';
 import { openNotificationIssue, openAndCloseNotificationIssue } from './github-issues.js';
 
 /**
@@ -157,11 +158,23 @@ async function main() {
         campaignsDirty = true;
       }
 
+      // Read before movePosted relocates postDir out from under this path.
+      const driveSourceId = await readDriveSourceId(postDir);
+
       try {
         await movePosted(postDir, project.id, channel.id);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.log(`::warning::[${project.id}/${channel.id}] posted successfully, but failed to move "${postName}" to posted/: ${message}`);
+      }
+
+      if (driveSourceId) {
+        try {
+          await moveToPostedFolder(driveSourceId, channel.driveFolderId);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.log(`::warning::[${project.id}/${channel.id}] posted successfully, but failed to move the source file in Drive: ${message}`);
+        }
       }
 
       try {
