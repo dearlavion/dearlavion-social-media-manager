@@ -27,7 +27,7 @@
         "stage": "awareness",
         "guidance": "Guide yarn",
         "channelId": "travel-besty-instagram",
-        "status": "queued",
+        "status": "posted",
         "prepStatus": "done",
         "caption": "Hello World",
         "targetDate": "2026-08-20",
@@ -35,7 +35,8 @@
         "targetDueAt": "2026-08-20T14:45:00.000Z",
         "expectedFileName": "TravelBesty_logo.png",
         "instagramPostType": "post",
-        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png"
+        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png",
+        "postedAt": "2026-08-20T15:48:04.109Z"
       }
     ],
     "channelTargets": [
