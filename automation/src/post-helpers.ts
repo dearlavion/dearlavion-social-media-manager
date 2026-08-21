@@ -4,13 +4,22 @@ import { publicRawUrl, postedRoot } from './config.js';
 import type { Campaign, CampaignSlot } from './config.js';
 import type { PostMedia } from './publishers/types.js';
 
-/** The slot (if any) across every campaign whose linkedPostPath matches -- e.g. to check whether a folder is reserved for a scheduled post. */
+/**
+ * The slot (if any) across every campaign whose linkedPostPath matches -- e.g. to check whether a folder is
+ * reserved for a scheduled post, or (post.ts) to resolve which slot's caption/instagramPostType a FIFO publish
+ * should use. Slots aren't supposed to share a linkedPostPath (scheduled-posts.ts's `claimed` tracking exists
+ * specifically to prevent it), but if one somehow does end up ambiguous, prefer a still-`queued` match over an
+ * already-`posted` one -- the posted slot's job is done, so a shared path more likely means someone else is
+ * currently trying to use it.
+ */
 export function findSlotByLinkedPath(campaigns: Campaign[], linkedPostPath: string): CampaignSlot | undefined {
+  const matches: CampaignSlot[] = [];
   for (const campaign of campaigns) {
-    const slot = campaign.slots.find((s) => s.linkedPostPath === linkedPostPath);
-    if (slot) return slot;
+    for (const slot of campaign.slots) {
+      if (slot.linkedPostPath === linkedPostPath) matches.push(slot);
+    }
   }
-  return undefined;
+  return matches.find((s) => s.status !== 'posted') ?? matches[0];
 }
 
 export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);

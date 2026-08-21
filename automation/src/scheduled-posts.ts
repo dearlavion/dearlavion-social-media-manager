@@ -172,7 +172,14 @@ async function main() {
               console.log(`${label}: Drive lookup for "${slot.expectedFileName}" failed -- ${err instanceof Error ? err.message : String(err)}`);
               return null;
             });
-            if (driveHit) {
+            // postFolderName is deterministic from the Drive file's own metadata, so re-finding a file that's
+            // already backing another slot (e.g. the same source reused across multiple planned posts) would
+            // compute the exact same path -- unlike findInInbox above, this branch has to check `claimed` itself
+            // before proceeding, or two slots end up sharing one linkedPostPath (confirmed live: this is what let
+            // a later, caption-less slot silently "steal" credit for a differently-captioned one's publish).
+            if (driveHit && claimed.has(repoRelativePath(path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit))))) {
+              console.log(`${label}: found "${slot.expectedFileName}" in Drive, but that file already backs another slot -- not relinking it here.`);
+            } else if (driveHit) {
               const postDir = path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit));
               if (await downloadEntry(driveHit, postDir, label)) {
                 await writeDriveSourceId(postDir, driveHit.id);
