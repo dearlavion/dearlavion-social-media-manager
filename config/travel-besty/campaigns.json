@@ -67,7 +67,8 @@
         "targetDueAt": "2026-08-21T08:21:00.000Z",
         "expectedFileName": "TravelBesty_logo.png",
         "instagramPostType": "post",
-        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png"
+        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png",
+        "scheduledNotifiedAt": "2026-08-21T08:22:07.268Z"
       }
     ],
     "channelTargets": [
