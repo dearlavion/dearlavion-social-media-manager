@@ -63,12 +63,11 @@
         "prepStatus": "todo",
         "caption": "Testing automation",
         "targetDate": "2026-08-21",
-        "targetTime": "14:45",
-        "targetDueAt": "2026-08-21T06:45:00.000Z",
+        "targetTime": "16:21",
+        "targetDueAt": "2026-08-21T08:21:00.000Z",
         "expectedFileName": "TravelBesty_logo.png",
         "instagramPostType": "post",
-        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png",
-        "scheduledNotifiedAt": "2026-08-21T07:51:14.510Z"
+        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png"
       }
     ],
     "channelTargets": [
