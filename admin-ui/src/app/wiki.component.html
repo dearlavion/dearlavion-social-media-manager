@@ -420,18 +420,21 @@
     </li>
   </ul>
 
-  <h2>Content Queue's planned posts also show up here</h2>
+  <h2>Content Queue's posts also show up here</h2>
   <p>
-    <strong>Load calendar</strong> loads reminders <em>and</em> every project's Content Queue "Planned" posts that
-    have a target date — a lavender dot marks any day with at least one, next to the green reminder dot. Click that
-    day to see the campaign, stage, project, and channel for each one.
+    <strong>Load calendar</strong> loads reminders <em>and</em> every project's Content Queue slots that have a
+    target date, at <strong>any status</strong> — <code>planned</code>, <code>queued</code>, or <code>posted</code>
+    all count. A lavender dot marks any day with at least one, next to the green reminder dot. The calendar and
+    the selected day's card sit side by side, so clicking a day doesn't mean scrolling past the month grid to see
+    it.
   </p>
   <p>
-    Narrower than Content Queue's own "Planned & posted" list: the slot's campaign must be <code>ongoing</code>,
-    <em>and</em> the slot itself must still be <code>planned</code> (not yet linked to media or posted) — so it
-    disappears from the calendar the moment it's linked, even though Content Queue keeps showing it (now with a
-    <code>queued</code>/<code>posted</code> status badge instead). It's <strong>read-only</strong> on this page —
-    edit dates, guidance, or links from Content Queue or Campaigns instead.
+    Click a day to see its posts under a <strong>Posts</strong> heading, <strong>grouped by campaign</strong> —
+    each entry shows its time, a status badge (green once <code>posted</code>), stage, project, and channel. The
+    slot's campaign must still be <code>ongoing</code> for it to show at all (same scoping Content Queue's own
+    "Planned & posted" list uses), but unlike that narrower behavior before, a post doesn't disappear from the
+    calendar the moment it publishes — it just switches badges. It's <strong>read-only</strong> on this page —
+    edit dates, guidance, captions, or links from Content Queue or Campaigns instead.
   </p>
 
   <h1 id="settings">Using Settings (workflow schedules)</h1>

@@ -113,6 +113,17 @@ export class SchedulerComponent {
       .sort((a, b) => (a.slot.targetTime ?? '').localeCompare(b.slot.targetTime ?? ''));
   }
 
+  /** The day's events grouped by campaign, in the same order they'd appear in the flat (time-sorted) list above. */
+  get selectedDateScheduledContentByCampaign(): { campaignName: string; events: ScheduledContentEvent[] }[] {
+    const groups = new Map<string, ScheduledContentEvent[]>();
+    for (const event of this.selectedDateScheduledContent) {
+      const list = groups.get(event.campaignName) ?? [];
+      list.push(event);
+      groups.set(event.campaignName, list);
+    }
+    return [...groups.entries()].map(([campaignName, events]) => ({ campaignName, events }));
+  }
+
   get selectedDateLabel(): string {
     return new Date(`${this.selectedDate}T00:00:00`).toLocaleDateString(undefined, {
       weekday: 'long',
@@ -162,9 +173,10 @@ export class SchedulerComponent {
   }
 
   /**
-   * Every Planned slot with a targetDate, across every project's ongoing
-   * campaigns -- exactly what Content Queue's own "Planned" list shows, so
-   * the calendar never surfaces something Content Queue itself wouldn't.
+   * Every slot with a targetDate, regardless of status, across every project's ongoing campaigns -- planned,
+   * queued, and posted all show here (each with its own status badge), so a day keeps showing what actually
+   * happened on it, not just what's still upcoming. Content Queue's own "Planned & posted" list is the same
+   * all-statuses scope; this just additionally requires a targetDate, since that's what places it on a day.
    */
   private async loadScheduledContent(): Promise<ScheduledContentEvent[]> {
     const { projects } = await this.github.loadProjects(this.connection);
@@ -175,7 +187,7 @@ export class SchedulerComponent {
         for (const campaign of campaigns) {
           if (campaign.status !== 'ongoing') continue;
           for (const slot of campaign.slots) {
-            if (slot.status === 'planned' && slot.targetDate) {
+            if (slot.targetDate) {
               events.push({ projectName: project.name, campaignName: campaign.name, channelId: slot.channelId, slot });
             }
           }

@@ -94,18 +94,22 @@
         }
 
         @if (selectedDateScheduledContent.length > 0) {
-          <h3 class="subhead">Scheduled content</h3>
-          <ul class="scheduled-content-list">
-            @for (event of selectedDateScheduledContent; track event.slot.id) {
-              <li>
-                <span class="reminder-time">{{ event.slot.targetTime || 'All day' }}</span>
-                <span class="scheduled-content-body">
-                  <span class="scheduled-content-campaign">{{ event.campaignName }} — {{ event.slot.stage }}</span>
-                  <span class="scheduled-content-meta">{{ event.projectName }} · {{ event.channelId }}</span>
-                </span>
-              </li>
-            }
-          </ul>
+          <h3 class="subhead">Posts</h3>
+          @for (group of selectedDateScheduledContentByCampaign; track group.campaignName) {
+            <h4 class="campaign-group-heading">{{ group.campaignName }}</h4>
+            <ul class="scheduled-content-list">
+              @for (event of group.events; track event.slot.id) {
+                <li>
+                  <span class="reminder-time">{{ event.slot.targetTime || 'All day' }}</span>
+                  <span class="slot-status-badge" [class]="'status-' + event.slot.status">{{ event.slot.status }}</span>
+                  <span class="scheduled-content-body">
+                    <span class="scheduled-content-campaign">{{ event.slot.stage }}</span>
+                    <span class="scheduled-content-meta">{{ event.projectName }} · {{ event.channelId }}</span>
+                  </span>
+                </li>
+              }
+            </ul>
+          }
           <p class="hint">Read-only here -- edit these in Content Queue or Campaigns.</p>
         }
 

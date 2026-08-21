@@ -266,6 +266,17 @@ input:focus {
 
 /* SCHEDULED CONTENT LIST */
 
+.campaign-group-heading {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  margin: 12px 0 4px;
+  color: var(--color-ink);
+}
+
+.campaign-group-heading:first-of-type {
+  margin-top: 4px;
+}
+
 .scheduled-content-list {
   list-style: none;
   margin: 0 0 1rem;
@@ -278,6 +289,28 @@ input:focus {
   gap: 0.75rem;
   padding: 0.6rem 0;
   border-bottom: 1px solid var(--color-line);
+}
+
+.slot-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--tint-cream);
+  color: var(--color-ink-soft);
+}
+
+.slot-status-badge.status-queued {
+  background: var(--tint-marigold);
+  color: var(--color-coral-deep);
+}
+
+.slot-status-badge.status-posted {
+  background: var(--tint-green);
+  color: var(--color-leaf);
 }
 
 .scheduled-content-body {
