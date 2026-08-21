@@ -315,3 +315,18 @@ input:focus {
 .save-btn {
   margin-top: 0.25rem;
 }
+
+/* LAYOUT */
+
+.scheduler-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 440px) 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .scheduler-layout {
+    grid-template-columns: 1fr;
+  }
+}

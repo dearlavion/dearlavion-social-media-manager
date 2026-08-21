@@ -32,94 +32,96 @@
   }
 
   @if (loaded) {
-    <section class="card calendar-card">
-      <div class="calendar-header">
-        <button type="button" class="btn-secondary nav-btn" (click)="prevMonth()">‹</button>
-        <h2>{{ monthLabel }}</h2>
-        <button type="button" class="btn-secondary nav-btn" (click)="nextMonth()">›</button>
-        <button type="button" class="btn-secondary today-btn" (click)="goToday()">Today</button>
-      </div>
+    <div class="scheduler-layout">
+      <section class="card calendar-card">
+        <div class="calendar-header">
+          <button type="button" class="btn-secondary nav-btn" (click)="prevMonth()">‹</button>
+          <h2>{{ monthLabel }}</h2>
+          <button type="button" class="btn-secondary nav-btn" (click)="nextMonth()">›</button>
+          <button type="button" class="btn-secondary today-btn" (click)="goToday()">Today</button>
+        </div>
 
-      <div class="calendar-grid">
-        @for (label of weekdayLabels; track label) {
-          <div class="weekday-label">{{ label }}</div>
-        }
-        @for (week of weeks; track $index) {
-          @for (cellDay of week; track cellDay?.date ?? $index) {
-            @if (cellDay) {
-              <button
-                type="button"
-                class="day-cell"
-                [class.today]="cellDay.isToday"
-                [class.selected]="cellDay.date === selectedDate"
-                (click)="selectDate(cellDay.date)"
-              >
-                <span class="day-number">{{ cellDay.day }}</span>
-                <span class="day-dots">
-                  @if (cellDay.reminders.length > 0) {
-                    <span class="day-dot"></span>
-                  }
-                  @if (cellDay.scheduledContent.length > 0) {
-                    <span class="day-dot-content"></span>
-                  }
-                </span>
-              </button>
-            } @else {
-              <div class="day-cell empty"></div>
+        <div class="calendar-grid">
+          @for (label of weekdayLabels; track label) {
+            <div class="weekday-label">{{ label }}</div>
+          }
+          @for (week of weeks; track $index) {
+            @for (cellDay of week; track cellDay?.date ?? $index) {
+              @if (cellDay) {
+                <button
+                  type="button"
+                  class="day-cell"
+                  [class.today]="cellDay.isToday"
+                  [class.selected]="cellDay.date === selectedDate"
+                  (click)="selectDate(cellDay.date)"
+                >
+                  <span class="day-number">{{ cellDay.day }}</span>
+                  <span class="day-dots">
+                    @if (cellDay.reminders.length > 0) {
+                      <span class="day-dot"></span>
+                    }
+                    @if (cellDay.scheduledContent.length > 0) {
+                      <span class="day-dot-content"></span>
+                    }
+                  </span>
+                </button>
+              } @else {
+                <div class="day-cell empty"></div>
+              }
             }
           }
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header"><h2>{{ selectedDateLabel }}</h2></div>
+
+        @if (selectedDateReminders.length === 0) {
+          <p class="hint">No reminders for this day yet.</p>
+        } @else {
+          <ul class="reminder-list">
+            @for (r of selectedDateReminders; track r.id) {
+              <li>
+                <span class="reminder-time">{{ r.time }}</span>
+                <span class="reminder-message">{{ r.message }}</span>
+                @if (r.notifiedAt) {
+                  <span class="reminder-notified">✓ notified</span>
+                }
+                <button type="button" class="btn-danger reminder-remove" (click)="removeReminder(r.id)">Remove</button>
+              </li>
+            }
+          </ul>
         }
-      </div>
-    </section>
 
-    <section class="card">
-      <div class="card-header"><h2>{{ selectedDateLabel }}</h2></div>
+        @if (selectedDateScheduledContent.length > 0) {
+          <h3 class="subhead">Scheduled content</h3>
+          <ul class="scheduled-content-list">
+            @for (event of selectedDateScheduledContent; track event.slot.id) {
+              <li>
+                <span class="reminder-time">{{ event.slot.targetTime || 'All day' }}</span>
+                <span class="scheduled-content-body">
+                  <span class="scheduled-content-campaign">{{ event.campaignName }} — {{ event.slot.stage }}</span>
+                  <span class="scheduled-content-meta">{{ event.projectName }} · {{ event.channelId }}</span>
+                </span>
+              </li>
+            }
+          </ul>
+          <p class="hint">Read-only here -- edit these in Content Queue or Campaigns.</p>
+        }
 
-      @if (selectedDateReminders.length === 0) {
-        <p class="hint">No reminders for this day yet.</p>
-      } @else {
-        <ul class="reminder-list">
-          @for (r of selectedDateReminders; track r.id) {
-            <li>
-              <span class="reminder-time">{{ r.time }}</span>
-              <span class="reminder-message">{{ r.message }}</span>
-              @if (r.notifiedAt) {
-                <span class="reminder-notified">✓ notified</span>
-              }
-              <button type="button" class="btn-danger reminder-remove" (click)="removeReminder(r.id)">Remove</button>
-            </li>
-          }
-        </ul>
-      }
+        <div class="add-reminder-row">
+          <input type="time" [(ngModel)]="newTime" />
+          <input type="text" [(ngModel)]="newMessage" placeholder="Reminder message" (keyup.enter)="addReminder()" />
+          <button type="button" class="btn-secondary" (click)="addReminder()">Add</button>
+        </div>
 
-      @if (selectedDateScheduledContent.length > 0) {
-        <h3 class="subhead">Scheduled content</h3>
-        <ul class="scheduled-content-list">
-          @for (event of selectedDateScheduledContent; track event.slot.id) {
-            <li>
-              <span class="reminder-time">{{ event.slot.targetTime || 'All day' }}</span>
-              <span class="scheduled-content-body">
-                <span class="scheduled-content-campaign">{{ event.campaignName }} — {{ event.slot.stage }}</span>
-                <span class="scheduled-content-meta">{{ event.projectName }} · {{ event.channelId }}</span>
-              </span>
-            </li>
-          }
-        </ul>
-        <p class="hint">Read-only here -- edit these in Content Queue or Campaigns.</p>
-      }
-
-      <div class="add-reminder-row">
-        <input type="time" [(ngModel)]="newTime" />
-        <input type="text" [(ngModel)]="newMessage" placeholder="Reminder message" (keyup.enter)="addReminder()" />
-        <button type="button" class="btn-secondary" (click)="addReminder()">Add</button>
-      </div>
-
-      <button type="button" class="btn-primary save-btn" (click)="save()" [disabled]="saving">
-        {{ saving ? 'Saving…' : 'Save to GitHub' }}
-      </button>
-      <p class="hint">
-        Adding/removing here only changes this page until you Save. Needs a GitHub token (Contents: read and write).
-      </p>
-    </section>
+        <button type="button" class="btn-primary save-btn" (click)="save()" [disabled]="saving">
+          {{ saving ? 'Saving…' : 'Save to GitHub' }}
+        </button>
+        <p class="hint">
+          Adding/removing here only changes this page until you Save. Needs a GitHub token (Contents: read and write).
+        </p>
+      </section>
+    </div>
   }
 </div>
