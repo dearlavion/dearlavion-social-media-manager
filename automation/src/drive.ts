@@ -5,6 +5,8 @@ import path from 'node:path';
 import { DRY_RUN } from './config.js';
 
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
+/** Where moveToPostedFolder() relocates a published post's source -- listNewEntries must never treat this as syncable content itself. */
+const POSTED_FOLDER_NAME = '_posted';
 
 export interface DriveEntry {
   id: string;
@@ -59,8 +61,11 @@ export async function listNewEntries(folderId: string, alreadySyncedIds: string[
     return [];
   }
   const drive = driveClient();
+  // Excludes the "_posted" subfolder itself (moveToPostedFolder's destination) -- without this, the very act of
+  // archiving a published post there makes that folder show up as "new" content next sync, re-downloading and
+  // re-publishing whatever's inside it. Confirmed live: this happened once before this exclusion was added.
   const res = await drive.files.list({
-    q: `'${folderId}' in parents and trashed = false and (mimeType contains 'image/' or mimeType contains 'video/' or mimeType = '${FOLDER_MIME_TYPE}')`,
+    q: `'${folderId}' in parents and trashed = false and name != '${POSTED_FOLDER_NAME}' and (mimeType contains 'image/' or mimeType contains 'video/' or mimeType = '${FOLDER_MIME_TYPE}')`,
     fields: 'files(id, name, createdTime, mimeType, size)',
     orderBy: 'createdTime',
   });
@@ -120,8 +125,6 @@ export async function downloadFile(fileId: string, destPath: string): Promise<vo
     res.data.on('end', resolve).on('error', reject).pipe(dest);
   });
 }
-
-const POSTED_FOLDER_NAME = '_posted';
 
 /** Finds (or creates) the "_posted" subfolder directly under a channel's Drive folder -- where published source files get relocated to. */
 async function resolvePostedFolderId(drive: ReturnType<typeof google.drive>, sourceFolderId: string): Promise<string> {
