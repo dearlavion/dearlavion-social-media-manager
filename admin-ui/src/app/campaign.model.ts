@@ -217,3 +217,16 @@ export function openSlotsForChannel(campaigns: Campaign[], channelId: string): L
   }
   return result;
 }
+
+/** Every slot for a given channel, across every campaign, regardless of status -- unlike openSlotsForChannel, includes queued/posted so Content Queue can show (and let you delete) the full history, not just what's still actionable. */
+export function allSlotsForChannel(campaigns: Campaign[], channelId: string): LinkedSlot[] {
+  const result: LinkedSlot[] = [];
+  for (const campaign of campaigns) {
+    for (const slot of campaign.slots) {
+      if (slot.channelId === channelId) {
+        result.push({ campaign, slot });
+      }
+    }
+  }
+  return result;
+}

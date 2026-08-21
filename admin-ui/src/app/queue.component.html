@@ -127,12 +127,12 @@
             </div>
           }
 
-          <h3 class="subhead">Planned (ongoing campaigns)</h3>
-          @if (plannedFor(channel.id).length === 0) {
+          <h3 class="subhead">Planned & posted (ongoing campaigns)</h3>
+          @if (slotsFor(channel.id).length === 0) {
             <p class="hint">Nothing planned yet.</p>
           } @else {
             <div class="planned-list">
-              @for (target of plannedFor(channel.id); track target.slot.id) {
+              @for (target of slotsFor(channel.id); track target.slot.id) {
                 <div class="planned-item">
                   @if (editingPlannedSlotId === target.slot.id) {
                     <div class="planned-edit-form">
@@ -192,6 +192,7 @@
                     </div>
                   } @else {
                     <span class="stage-badge">{{ target.slot.stage }}</span>
+                    <span class="slot-status-badge" [class]="'status-' + target.slot.status">{{ target.slot.status }}</span>
                     <span class="campaign-name">{{ target.campaign.name }}</span>
                     <span class="planned-guidance">{{ target.slot.guidance || '(no guidance)' }}</span>
                     @if (target.slot.targetDueAt) {
@@ -208,6 +209,9 @@
                     @if (target.slot.caption) {
                       <span class="expected-filename-badge">✎ {{ target.slot.caption }}</span>
                     }
+                    @if (target.slot.postedAt) {
+                      <span class="target-date-badge">✓ posted {{ target.slot.postedAt | date: 'MMM d, h:mm a' }}</span>
+                    }
                     <button
                       type="button"
                       class="prep-status-chip"
@@ -218,7 +222,7 @@
                       {{ target.slot.prepStatus === 'done' ? '✓ done' : 'todo' }}
                     </button>
 
-                    @if (unlinkedSyncedFor(target.slot.channelId).length > 0) {
+                    @if (target.slot.status === 'planned' && unlinkedSyncedFor(target.slot.channelId).length > 0) {
                       <div class="campaign-link-picker">
                         @for (post of unlinkedSyncedFor(target.slot.channelId); track post.path) {
                           <button type="button" class="btn-ghost" [disabled]="saving" (click)="linkToCampaign(target, post)">

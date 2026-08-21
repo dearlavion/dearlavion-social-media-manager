@@ -9,6 +9,7 @@ import {
   CampaignSlot,
   DEFAULT_STAGES,
   LinkedSlot,
+  allSlotsForChannel,
   campaignDateOptions,
   computeTargetDueAt,
   findLinkedSlot,
@@ -116,8 +117,9 @@ export class QueueComponent {
     return this.channels.filter((c) => memberIds.has(c.id) && c.enabled);
   }
 
-  plannedFor(channelId: string): LinkedSlot[] {
-    return openSlotsForChannel(this.campaignsInScope, channelId);
+  /** Every slot for this channel regardless of status (planned/queued/posted) -- shows full history, not just what's still actionable. */
+  slotsFor(channelId: string): LinkedSlot[] {
+    return allSlotsForChannel(this.campaignsInScope, channelId);
   }
 
   /** Synced posts for a channel not already claimed by any slot -- candidates for a Planned row's "Link media" action. */

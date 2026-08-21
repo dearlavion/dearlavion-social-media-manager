@@ -139,6 +139,28 @@ label {
   flex-shrink: 0;
 }
 
+.slot-status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: var(--tint-cream);
+  color: var(--color-ink-soft);
+}
+
+.slot-status-badge.status-queued {
+  background: var(--tint-marigold);
+  color: var(--color-coral-deep);
+}
+
+.slot-status-badge.status-posted {
+  background: var(--tint-green);
+  color: var(--color-leaf);
+}
+
 .hint {
   color: var(--color-ink-soft);
   font-size: 0.8rem;

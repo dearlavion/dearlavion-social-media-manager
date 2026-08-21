@@ -137,9 +137,12 @@
     currently-synced post it could claim — same underlying link, reachable from whichever side you're looking at.
   </p>
   <p>
-    <strong>Planned</strong> only shows campaigns whose <strong>status is "ongoing"</strong> (set from a campaign's
-    own detail view) — this is deliberately narrower than "every campaign that exists," so Content Queue reflects
-    what you're actively running, not everything you've ever planned. For each channel you can:
+    <strong>Planned & posted</strong> only shows campaigns whose <strong>status is "ongoing"</strong> (set from a
+    campaign's own detail view) — this is deliberately narrower than "every campaign that exists," so Content
+    Queue reflects what you're actively running, not everything you've ever planned. Within that, it shows
+    <strong>every slot for the channel regardless of status</strong> — a status badge (<code>planned</code> /
+    <code>queued</code> / <code>posted</code>, green once posted with a "✓ posted &lt;when&gt;" badge) marks where
+    each one is, so a post doesn't disappear from view the moment it actually publishes. For each channel you can:
   </p>
   <ul>
     <li><strong>+ Add planned post</strong> — pick a <strong>stage</strong> (<code>awareness</code> /
@@ -148,8 +151,10 @@
       publish with the image, and optionally a <strong>target date and time</strong> — creates a new slot directly
       on the campaign you picked above, without going through the builder.</li>
     <li><strong>Edit</strong> a planned post's stage/guidance/caption/target date/time inline, or
-      <strong>Remove</strong> it entirely. A slot created before stage became a fixed dropdown may show its
-      original custom text as an extra "(custom)" option — pick one of the four standard stages to replace it.</li>
+      <strong>Remove</strong> it entirely — at any status, including already-<code>posted</code> ones. Removing
+      only deletes the tracking record; it never touches the actual synced/posted media or un-publishes anything
+      already sent to Buffer. A slot created before stage became a fixed dropdown may show its original custom
+      text as an extra "(custom)" option — pick one of the four standard stages to replace it.</li>
     <li>
       <strong>Caption</strong> is stored on the slot itself, not written to a file — at publish time it takes
       priority over a <code>caption.txt</code> in the linked post's folder if one exists. It's only read once, at
@@ -422,11 +427,11 @@
     day to see the campaign, stage, project, and channel for each one.
   </p>
   <p>
-    This is exactly the same set Content Queue's own "Planned (ongoing campaigns)" list shows: the slot's campaign
-    must be <code>ongoing</code>, and the slot itself must still be <code>planned</code> (not yet linked to media or
-    posted) — so it disappears from the calendar the moment it's linked in Content Queue, same as it does there.
-    It's <strong>read-only</strong> on this page — edit dates, guidance, or links from Content Queue or Campaigns
-    instead.
+    Narrower than Content Queue's own "Planned & posted" list: the slot's campaign must be <code>ongoing</code>,
+    <em>and</em> the slot itself must still be <code>planned</code> (not yet linked to media or posted) — so it
+    disappears from the calendar the moment it's linked, even though Content Queue keeps showing it (now with a
+    <code>queued</code>/<code>posted</code> status badge instead). It's <strong>read-only</strong> on this page —
+    edit dates, guidance, or links from Content Queue or Campaigns instead.
   </p>
 
   <h1 id="settings">Using Settings (workflow schedules)</h1>
