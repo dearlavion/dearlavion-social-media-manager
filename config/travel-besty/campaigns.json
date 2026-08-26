@@ -53,6 +53,20 @@
         "instagramPostType": "post",
         "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png",
         "postedAt": "2026-08-20T17:24:36.586Z"
+      },
+      {
+        "id": "5dc6fe2c-1949-41c1-8149-85b6104f9307",
+        "stage": "awareness",
+        "guidance": "Reach people who don’t know you yet -- lead with a relatable pain point or hook, no pitch yet.",
+        "channelId": "travel-besty-instagram",
+        "status": "planned",
+        "prepStatus": "todo",
+        "caption": "hello",
+        "targetDate": "2026-08-26",
+        "targetTime": "21:45",
+        "targetDueAt": "2026-08-26T13:45:00.000Z",
+        "expectedFileName": "TravelBesty_logo.png",
+        "instagramPostType": "post"
       }
     ],
     "channelTargets": [
