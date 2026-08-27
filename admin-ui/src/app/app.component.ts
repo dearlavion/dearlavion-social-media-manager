@@ -10,6 +10,7 @@ import { CampaignComponent } from './campaign.component';
 import { SettingsComponent } from './settings.component';
 
 const CONNECTION_STORAGE_KEY = 'dl-smm-admin-connection';
+const PROJECT_STORAGE_KEY = 'dl-smm-admin-project';
 
 @Component({
   selector: 'app-root',
@@ -80,7 +81,7 @@ export class AppComponent implements OnInit {
     this.mobileMenuOpen = false;
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const saved = sessionStorage.getItem(CONNECTION_STORAGE_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as Partial<GithubConnection>;
@@ -92,6 +93,16 @@ export class AppComponent implements OnInit {
         branch: parsed.branch?.trim() || this.connection.branch,
         token: parsed.token ?? this.connection.token,
       };
+    }
+
+    // Auto-restore the last-viewed project on refresh -- same calls Load projects / a project card / Load
+    // channels.json trigger by hand, just chained automatically. Always fetches current data from GitHub (no
+    // stale local cache), since this repo's channels.json/projects.json change constantly via automation.
+    const savedProjectId = sessionStorage.getItem(PROJECT_STORAGE_KEY);
+    await this.loadProjects();
+    if (savedProjectId && this.projects.some((p) => p.id === savedProjectId)) {
+      this.selectProject(savedProjectId);
+      await this.load();
     }
   }
 
@@ -124,6 +135,7 @@ export class AppComponent implements OnInit {
 
   selectProject(id: string): void {
     this.selectedProjectId = id;
+    sessionStorage.setItem(PROJECT_STORAGE_KEY, id);
     this.loaded = false;
     this.channels = [];
     this.sha = null;
