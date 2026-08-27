@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChannelConfig, INSTAGRAM_POST_TYPES, InstagramPostType, Project } from './channel.model';
@@ -29,7 +29,7 @@ interface QueuedPost extends InboxPost {
   templateUrl: './queue.component.html',
   styleUrl: './queue.component.css',
 })
-export class QueueComponent {
+export class QueueComponent implements OnInit {
   @Input({ required: true }) connection!: GithubConnection;
   @Input() project: Project | null = null;
   @Input() channels: ChannelConfig[] = [];
@@ -135,6 +135,17 @@ export class QueueComponent {
   /** Instagram post type only makes sense for an Instagram channel -- Buffer ignores it (and rejects the field) for other platforms. */
   isInstagramChannel(channelId: string): boolean {
     return this.channels.find((c) => c.id === channelId)?.platform === 'instagram';
+  }
+
+  /**
+   * Auto-loads once on entering this view, mirroring the Dashboard's own auto-load -- the project is normally
+   * already selected/loaded by the time a user navigates here, so a separate manual "Load" click would just be
+   * redundant. Angular sets @Input()s before ngOnInit runs on a freshly-constructed component (this view is
+   * behind a structural @if, so it's fully destroyed/recreated on every switch), so `this.project` is safe to
+   * read here.
+   */
+  ngOnInit(): void {
+    if (this.project) void this.load();
   }
 
   async load(): Promise<void> {

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChannelConfig, Project } from './channel.model';
@@ -26,7 +26,7 @@ type Mode = 'list' | 'builder' | 'detail';
   templateUrl: './campaign.component.html',
   styleUrl: './campaign.component.css',
 })
-export class CampaignComponent {
+export class CampaignComponent implements OnInit {
   @Input({ required: true }) connection!: GithubConnection;
   @Input() project: Project | null = null;
   @Input() channels: ChannelConfig[] = [];
@@ -127,6 +127,17 @@ export class CampaignComponent {
   }
 
   // --- load/save ---
+
+  /**
+   * Auto-loads once on entering this view, mirroring the Dashboard's own auto-load -- the project is normally
+   * already selected/loaded by the time a user navigates here, so a separate manual "Load campaigns" click would
+   * just be redundant. Angular sets @Input()s before ngOnInit runs on a freshly-constructed component (this view
+   * is behind a structural @if, so it's fully destroyed/recreated on every switch), so `this.project` is safe to
+   * read here.
+   */
+  ngOnInit(): void {
+    if (this.project) void this.load();
+  }
 
   async load(): Promise<void> {
     if (!this.project) return;
