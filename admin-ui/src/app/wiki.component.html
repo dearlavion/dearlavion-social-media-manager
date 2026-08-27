@@ -211,12 +211,16 @@
     </li>
     <li>
       If nothing is linked yet <strong>but the post has an "Expected Drive file name" set</strong> — before giving
-      up, it looks for a file with that exact name: first among this channel's already-synced-but-unclaimed posts
-      sitting in <code>inbox/</code>, then (if not found there) live in the channel's Drive folder itself,
-      downloading it directly if it finds one. A hit already in <code>inbox/</code> links and publishes
-      immediately, same as the already-linked case above. A fresh Drive download only links this run — it
-      publishes on the <em>next</em> run instead, once the file's actually been pushed to GitHub (Buffer needs a
-      working public URL for it, which a file that only exists on the runner's local disk doesn't have yet).
+      up, it looks for a file with that exact name: <strong>live in the channel's Drive folder first</strong>
+      (the authoritative source, so a freshly re-uploaded file wins over a stale same-named copy already sitting
+      in <code>inbox/</code>), downloading it directly if found; only then, if Drive doesn't have a match, does it
+      fall back to this channel's already-synced-but-unclaimed posts already sitting in <code>inbox/</code>. A hit
+      already in <code>inbox/</code> links and publishes immediately, same as the already-linked case above. A
+      fresh Drive download only links this run — it publishes on the <em>next</em> run instead, once the file's
+      actually been pushed to GitHub (Buffer needs a working public URL for it, which a file that only exists on
+      the runner's local disk doesn't have yet). Either way, a match already linked to a <em>different</em> slot
+      is skipped rather than reused — reusing the same file across posts is fine, just not two slots claiming the
+      same copy at once.
     </li>
     <li>
       If nothing is linked and nothing matches — it logs the message (naming the expected file if one was set),

@@ -160,6 +160,43 @@ async function main() {
             continue;
           }
 
+          // Drive is checked first (the authoritative source -- picks up a freshly (re)uploaded file even if a
+          // stale same-named copy is already sitting in inbox/), falling back to inbox/ only if Drive doesn't
+          // have a match. postFolderName is deterministic from the Drive file's own metadata, so re-finding a
+          // file that's already backing another slot (e.g. the same source reused across multiple planned posts)
+          // would compute the exact same path -- this branch has to check `claimed` itself before proceeding, or
+          // two slots end up sharing one linkedPostPath (confirmed live: this is what let a later, caption-less
+          // slot silently "steal" credit for a differently-captioned one's publish).
+          const driveHit = await findFileByName(channel.driveFolderId, slot.expectedFileName).catch((err) => {
+            console.log(`${label}: Drive lookup for "${slot.expectedFileName}" failed -- ${err instanceof Error ? err.message : String(err)}`);
+            return null;
+          });
+          const driveHitClaimed =
+            driveHit && claimed.has(repoRelativePath(path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit))));
+          if (driveHitClaimed) {
+            console.log(`${label}: found "${slot.expectedFileName}" in Drive, but that file already backs another slot -- not relinking it here.`);
+          }
+
+          if (driveHit && !driveHitClaimed) {
+            const postDir = path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit));
+            if (await downloadEntry(driveHit, postDir, label)) {
+              await writeDriveSourceId(postDir, driveHit.id);
+            }
+            channel.syncedDriveFileIds.push(driveHit.id);
+            channelsDirty = true;
+            slot.linkedPostPath = repoRelativePath(postDir);
+            slot.status = 'queued';
+            claimed.add(slot.linkedPostPath);
+            campaignsDirty = true;
+            console.log(`${label}: found "${slot.expectedFileName}" in Drive, downloaded to "${slot.linkedPostPath}"`);
+            // Don't fall through to publish this same run -- the file only exists on local disk right now, not
+            // yet on GitHub (the "Commit posted state" step pushes it *after* this script finishes), so Buffer's
+            // fetch of the raw.githubusercontent.com URL would fail. Publish next run instead, once it's pushed.
+            continue;
+          }
+
+          // No usable Drive match (not found, or already claimed elsewhere) -- fall back to an already-synced,
+          // unclaimed inbox/ copy, e.g. from a regular sync-drive.ts sweep that ran before this slot came due.
           const inboxHit = await findInInbox(project.id, channel.id, slot.expectedFileName, claimed);
           if (inboxHit) {
             slot.linkedPostPath = repoRelativePath(inboxHit);
@@ -167,35 +204,6 @@ async function main() {
             claimed.add(slot.linkedPostPath);
             campaignsDirty = true;
             console.log(`${label}: matched expected file "${slot.expectedFileName}" already synced at "${slot.linkedPostPath}"`);
-          } else {
-            const driveHit = await findFileByName(channel.driveFolderId, slot.expectedFileName).catch((err) => {
-              console.log(`${label}: Drive lookup for "${slot.expectedFileName}" failed -- ${err instanceof Error ? err.message : String(err)}`);
-              return null;
-            });
-            // postFolderName is deterministic from the Drive file's own metadata, so re-finding a file that's
-            // already backing another slot (e.g. the same source reused across multiple planned posts) would
-            // compute the exact same path -- unlike findInInbox above, this branch has to check `claimed` itself
-            // before proceeding, or two slots end up sharing one linkedPostPath (confirmed live: this is what let
-            // a later, caption-less slot silently "steal" credit for a differently-captioned one's publish).
-            if (driveHit && claimed.has(repoRelativePath(path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit))))) {
-              console.log(`${label}: found "${slot.expectedFileName}" in Drive, but that file already backs another slot -- not relinking it here.`);
-            } else if (driveHit) {
-              const postDir = path.join(inboxRoot(project.id), channel.id, postFolderName(driveHit));
-              if (await downloadEntry(driveHit, postDir, label)) {
-                await writeDriveSourceId(postDir, driveHit.id);
-              }
-              channel.syncedDriveFileIds.push(driveHit.id);
-              channelsDirty = true;
-              slot.linkedPostPath = repoRelativePath(postDir);
-              slot.status = 'queued';
-              claimed.add(slot.linkedPostPath);
-              campaignsDirty = true;
-              console.log(`${label}: found "${slot.expectedFileName}" in Drive, downloaded to "${slot.linkedPostPath}"`);
-              // Don't fall through to publish this same run -- the file only exists on local disk right now, not
-              // yet on GitHub (the "Commit posted state" step pushes it *after* this script finishes), so Buffer's
-              // fetch of the raw.githubusercontent.com URL would fail. Publish next run instead, once it's pushed.
-              continue;
-            }
           }
         }
 
