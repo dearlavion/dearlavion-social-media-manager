@@ -12,7 +12,7 @@
         "stage": "awareness",
         "guidance": "Reach people who don’t know you yet -- lead with a relatable pain point or hook, no pitch yet.",
         "channelId": "travel-besty-instagram",
-        "status": "queued",
+        "status": "posted",
         "prepStatus": "todo",
         "caption": "Tesssttt",
         "targetDate": "2026-08-27",
@@ -20,7 +20,8 @@
         "targetDueAt": "2026-08-27T03:01:00.000Z",
         "expectedFileName": "TravelBesty_logo.png",
         "instagramPostType": "post",
-        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png"
+        "linkedPostPath": "inbox/travel-besty/travel-besty-instagram/2026-08-12T13-05-36-270Z-TravelBesty_logo.png",
+        "postedAt": "2026-08-27T09:33:24.860Z"
       }
     ],
     "channelTargets": [
