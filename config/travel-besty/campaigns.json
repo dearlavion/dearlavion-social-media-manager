@@ -6,7 +6,22 @@
     "startDate": "2026-08-16",
     "endDate": "2026-08-31",
     "createdAt": "2026-08-15T03:58:33.958Z",
-    "slots": [],
+    "slots": [
+      {
+        "id": "593593c8-87ed-4e02-9e28-f424f6bca6ff",
+        "stage": "awareness",
+        "guidance": "Reach people who don’t know you yet -- lead with a relatable pain point or hook, no pitch yet.",
+        "channelId": "travel-besty-instagram",
+        "status": "planned",
+        "prepStatus": "todo",
+        "caption": "Tesssttt",
+        "targetDate": "2026-08-27",
+        "targetTime": "11:01",
+        "targetDueAt": "2026-08-27T03:01:00.000Z",
+        "expectedFileName": "TravelBesty_logo.png",
+        "instagramPostType": "post"
+      }
+    ],
     "channelTargets": [
       {
         "channelId": "travel-besty-instagram",
